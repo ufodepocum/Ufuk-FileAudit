@@ -87,6 +87,11 @@ def upload():
     for path in sorted(ROOT.joinpath('inventory').glob('outbox-*.json')):
         try:
             data=json.loads(path.read_text(encoding='utf-8'))
+            clock=datetime.now(timezone.utc)
+            try:boundary=clock.replace(year=clock.year-1)
+            except ValueError:boundary=clock.replace(year=clock.year-1,day=28)
+            if datetime.fromisoformat(data['completed_at'])<boundary:
+                path.unlink();LOG.info('Expired queued inventory removed');continue
             response=requests.post(BASE+'/monitor/api/inventory/',json=data,headers=HEADERS,timeout=60)
             if response.status_code in (200,201):path.unlink();LOG.info('Inventory delivered')
             else:LOG.warning('Inventory HTTP %s',response.status_code)

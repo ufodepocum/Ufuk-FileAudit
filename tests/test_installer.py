@@ -24,7 +24,7 @@ class InstallerTests(unittest.TestCase):
         remote=SimpleNamespace(run=lambda script:'INSTALL_REQUIRED')
         with self.assertRaises(wizard.SetupError):wizard.wait_for_npcap(remote,'script',lambda prompt:'q')
     def test_config_keeps_secret_and_contains_no_admin_password(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp,patch.object(wizard.os,'chown',create=True):
             root=Path(tmp)
             wizard.configure_server(root,'192.0.2.10','192.0.2.20',8085,{'Veri$':r'D:\Veri'})
             first=(root/'runtime.env').read_text()
@@ -33,7 +33,7 @@ class InstallerTests(unittest.TestCase):
             self.assertNotIn('password',first.lower());self.assertIn('Veri$',first)
             with self.assertRaises(wizard.SetupError):wizard.configure_server(root,'192.0.2.11','192.0.2.20',8085,{'Veri':r'D:\Veri'})
     def test_unknown_installation_directory_is_not_overwritten(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp,patch.object(wizard.os,'chown',create=True):
             source=Path(tmp)/'source';target=Path(tmp)/'destination'
             (source/'app').mkdir(parents=True);(source/'installer').mkdir();(source/'app/manage.py').write_text('pass');(source/'installer/wizard.py').write_text('pass')
             target.mkdir();(target/'private.txt').write_text('keep')
@@ -51,7 +51,7 @@ class InstallerTests(unittest.TestCase):
                 if 'AGENT_STARTED' in script:return json.dumps({'backup':r'C:\ProgramData\Ufuk-FileAudit\backups\test'})
                 if 'api_status' in script:return json.dumps({'api_status':201,'capture':'Running'})
                 return 'OK'
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp,patch.object(wizard.os,'chown',create=True):
             root=Path(tmp);source=Path(__file__).resolve().parents[1]
             import shutil
             shutil.copytree(source/'installer/windows',root/'installer/windows')

@@ -145,7 +145,7 @@ docker compose run --rm --entrypoint python web manage.py test reports --noinput
 
 Kurucu akışı, Npcap bekleme/doğrulama, parola saklamama, tarih/retention, ilk parola değişimi, PDF/CSV ve API tekrar gönderimi testleri vardır.
 Windows adımları için sözdizimi ve simüle kurulum testleri bulunur. Bu sürümün dağıtım kurucusu ayrı, temiz bir Windows VM'sinde uçtan uca çalıştırılmış değildir.
-Test ayrıntıları `TESTING.md` içindedir. Yayın paketini yeniden üretmek için Git deposunun kökünde `python3 tools/release.py --out ../yayina-hazir` çalıştırın.
+Test ayrıntıları `TESTING.md` içindedir. Yayın paketini yeniden üretmek için önce kaynak değişikliklerini commit edin; sonra Git deposunun kökünde `python3 tools/release.py --out ../yayina-hazir` çalıştırın.
 
 ## Lisans
 

@@ -7,7 +7,9 @@ SKIP_DIRS={'.git','__pycache__','.installer-venv','data','backups','downloads','
 SKIP_FILES={'.env','runtime.env','installation.json','config.json'}
 def source_files(root):
     result=[]
-    for file in root.rglob('*'):
+    tracked=subprocess.check_output(['git','-C',str(root),'ls-files','-z']).decode('utf-8').split('\0')
+    for name in filter(None,tracked):
+        file=root/name
         rel=file.relative_to(root)
         if any(x in SKIP_DIRS for x in rel.parts) or file.name in SKIP_FILES:continue
         if file.suffix in ('.pyc','.sqlite3','.log','.zip') or file.name.endswith('.tar.gz'):continue
@@ -59,6 +61,7 @@ document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener
 
 def build(root,destination):
     root=root.resolve();destination=destination.resolve()
+    if subprocess.check_output(['git','-C',str(root),'status','--porcelain']).strip():raise RuntimeError('Yayın için önce kaynak değişikliklerini Git deposuna commit edin.')
     if destination==Path(destination.anchor) or destination==root or destination in root.parents:raise RuntimeError('Güvensiz çıktı dizini')
     destination.mkdir(parents=True,exist_ok=True)
     marker=destination/'.ufuk-release-output'
@@ -75,7 +78,10 @@ def build(root,destination):
     for file in files:
         if file.is_symlink():raise RuntimeError('Kaynak bağlantı içeriyor: '+str(file))
     with tarfile.open(publish/(prefix+'.tar.gz'),'w:gz') as tar:
-        for file in files:tar.add(file,arcname=prefix+'/'+file.relative_to(root).as_posix(),recursive=False)
+        for file in files:
+            info=tar.gettarinfo(str(file),arcname=prefix+'/'+file.relative_to(root).as_posix())
+            info.mode=0o755 if file.suffix=='.sh' else 0o644;info.uid=info.gid=0;info.uname=info.gname=''
+            with open(file,'rb') as data:tar.addfile(info,data)
     with zipfile.ZipFile(publish/(prefix+'.zip'),'w',zipfile.ZIP_DEFLATED) as z:
         for file in files:z.write(file,prefix+'/'+file.relative_to(root).as_posix())
     shutil.copyfile(root/'install.sh',publish/'install.sh')
