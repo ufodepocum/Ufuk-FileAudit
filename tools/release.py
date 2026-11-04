@@ -71,7 +71,12 @@ def build(root,destination):
     if publish.exists():
         resolved=publish.resolve()
         if resolved.parent!=destination or resolved.name!='publish':raise RuntimeError('Güvensiz yayın dizini')
-        shutil.rmtree(resolved)
+        def retry_readonly(function,path,info):
+            file=Path(path).resolve()
+            if not file.is_relative_to(resolved) or not isinstance(info[1],PermissionError):raise info[1]
+            file.chmod(0o700 if file.is_dir() else 0o600)
+            function(path)
+        shutil.rmtree(resolved,onerror=retry_readonly)
     publish.mkdir()
     version=(root/'VERSION').read_text().strip();prefix='Ufuk-FileAudit-'+version
     files=source_files(root)
