@@ -10,7 +10,7 @@ Web uygulaması Ubuntu'da Docker ile; SMB ajanı ve disk envanteri Windows'ta SY
 Kaynak deposunu klonlayarak:
 
 ```bash
-git clone https://github.com/KULLANICI/Ufuk-FileAudit.git
+git clone https://github.com/ufodepocum/Ufuk-FileAudit.git
 cd Ufuk-FileAudit
 sudo bash install.sh
 ```
@@ -18,11 +18,10 @@ sudo bash install.sh
 GitHub Releases bölümüne kurulum dosyaları yüklendiyse tek betikle:
 
 ```bash
-curl -fL https://github.com/KULLANICI/Ufuk-FileAudit/releases/latest/download/install.sh -o install.sh
-sudo bash install.sh --source https://github.com/KULLANICI/Ufuk-FileAudit/releases/latest/download/
+curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh -o install.sh
+sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
 ```
 
-`KULLANICI` yerine GitHub kullanıcı adınızı yazın. Doğrudan indirme için depo ve sürüm dosyaları herkese açık olmalıdır.
 
 ## Web sitenizden kurulum
 
