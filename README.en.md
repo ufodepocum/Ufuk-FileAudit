@@ -9,7 +9,7 @@ File auditing and reporting for Windows file servers. The web application runs o
 Clone the source repository:
 
 ```bash
-git clone https://github.com/USERNAME/Ufuk-FileAudit.git
+git clone https://github.com/ufodepocum/Ufuk-FileAudit.git
 cd Ufuk-FileAudit
 sudo bash install.sh
 ```
@@ -17,11 +17,11 @@ sudo bash install.sh
 If release assets have been published, use the standalone installer:
 
 ```bash
-curl -fL https://github.com/USERNAME/Ufuk-FileAudit/releases/latest/download/install.sh -o install.sh
-sudo bash install.sh --source https://github.com/USERNAME/Ufuk-FileAudit/releases/latest/download/
+curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh -o install.sh
+sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
 ```
 
-Replace `USERNAME` with the repository owner's GitHub username. Anonymous installation requires a public repository and public release assets.
+This repository and its release assets are public, so installation does not require a GitHub account.
 
 ## Host the installer on any website
 
