@@ -1,0 +1,13 @@
+.env
+runtime.env
+.installer-venv/
+data/
+backups/
+downloads/
+__pycache__/
+*.pyc
+*.sqlite3
+*.log
+config.json
+installation.json
+*.tmp

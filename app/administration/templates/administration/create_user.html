@@ -1,0 +1,1 @@
+{% extends 'reports/base.html' %}{% block content %}<div class='page-head'><h1>Kullanıcı ekle</h1></div><section class='panel form-card'><form method='post'>{% csrf_token %}{{ form.as_p }}<button class='btn primary' type='submit'>Kaydet</button> <a class='btn' href='/administration/users/'>Vazgeç</a></form></section>{% endblock %}

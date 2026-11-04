@@ -1,0 +1,24 @@
+name: ufuk-fileaudit
+services:
+  web:
+    build: .
+    image: ufuk-fileaudit:1.0.0
+    restart: unless-stopped
+    ports:
+      - "${WEB_BIND_IP:-0.0.0.0}:${WEB_PORT:-8085}:8000"
+    env_file:
+      - path: runtime.env
+        format: raw
+    volumes:
+      - ./data:/data
+    mem_limit: 768m
+    cpus: 1.5
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

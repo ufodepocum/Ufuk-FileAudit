@@ -1,0 +1,13 @@
+.git
+.env
+runtime.env
+.installer-venv
+data
+backups
+downloads
+installer
+tests
+__pycache__
+**/__pycache__
+*.tar.gz
+*.zip
