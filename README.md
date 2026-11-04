@@ -1,5 +1,7 @@
 # Ufuk-FileAudit
 
+**Türkçe** · [English installation guide](README.en.md)
+
 Windows dosya sunucuları için Türkçe denetim, grafik ve PDF raporlama uygulaması.
 Web uygulaması Ubuntu'da Docker ile; SMB ajanı ve disk envanteri Windows'ta SYSTEM hesabıyla çalışır.
 
