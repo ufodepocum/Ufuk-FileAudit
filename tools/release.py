@@ -45,6 +45,12 @@ def build_sources(root,out,files):
         page.write_text(skeleton('Kaynak kodu',body,link(out/'site.css',page),link(out/'index.html',page)),encoding='utf-8')
     for file in files:
         rel=file.relative_to(root);page=out/page_for(rel);page.parent.mkdir(parents=True,exist_ok=True)
+        if file.suffix.lower() in {'.png','.jpg','.jpeg','.webp'}:
+            asset=out/'assets'/rel;asset.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(file,asset)
+            body='<main class="file-page"><div class="crumb"><a href="'+link(out/'index.html',page)+'">Ufuk-FileAudit</a> / '+html.escape(rel.as_posix())+'</div><section class="card"><div class="card-head">'+html.escape(rel.name)+'</div><div class="inside"><img src="'+html.escape(link(asset,page),quote=True)+'" alt="'+html.escape(rel.stem,quote=True)+'" style="display:block;max-width:100%;height:auto"></div></section></main>'
+            page.write_text(skeleton(rel.name,body,link(out/'site.css',page),link(out/'index.html',page)),encoding='utf-8')
+            continue
         text=file.read_text(encoding='utf-8',errors='replace')
         body='<main class="file-page"><div class="crumb"><a href="'+link(out/'index.html',page)+'">Ufuk-FileAudit</a> / <a href="'+link(out/page_for(rel.parent,True),page)+'">'+html.escape(rel.parent.as_posix())+'</a> / '+html.escape(rel.name)+'</div><section class="card"><div class="card-head"><span>'+html.escape(rel.name)+'</span><span class="file-type">'+str(len(text.splitlines()))+' satır · UTF-8</span></div><div class="code-scroll"><pre class="source-code">'+html.escape(text)+'</pre></div></section></main>'
         page.write_text(skeleton(rel.name,body,link(out/'site.css',page),link(out/'index.html',page)),encoding='utf-8')

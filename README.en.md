@@ -4,6 +4,22 @@
 
 File auditing and reporting for Windows file servers. The web application runs on Ubuntu in Docker. The SMB auditing agent and disk inventory worker run on Windows as SYSTEM.
 
+## Screenshots
+
+Captured from the actual application interface using entirely fictional demo data. Users, files, IP addresses and measurements are examples. The application interface is in Turkish.
+
+### Charts and reports
+
+![User activity charts and report filters](docs/images/grafikler.png)
+
+### Audit log
+
+![Audit events with date, user and file filters](docs/images/islem-kayitlari.png)
+
+### Disk usage by file owner
+
+![File counts and disk space in GB by owner](docs/images/disk-kullanimi.png)
+
 ## Install from GitHub
 
 Clone the source repository:

@@ -5,6 +5,22 @@
 Windows dosya sunucuları için Türkçe denetim, grafik ve PDF raporlama uygulaması.
 Web uygulaması Ubuntu'da Docker ile; SMB ajanı ve disk envanteri Windows'ta SYSTEM hesabıyla çalışır.
 
+## Örnek ekran görüntüleri
+
+Görseller gerçek uygulama arayüzünden, tamamen kurgusal demo verileriyle hazırlanmıştır. Kullanıcılar, dosyalar, IP adresleri ve ölçümler örnektir.
+
+### Grafikler ve raporlar
+
+![Kullanıcı işlem grafikleri ve rapor filtreleri](docs/images/grafikler.png)
+
+### İşlem kayıtları
+
+![Tarih, kullanıcı ve dosya bazında işlem kayıtları](docs/images/islem-kayitlari.png)
+
+### Dosya sahibine göre disk kullanımı
+
+![Kullanıcıların dosya sayısı ve GB cinsinden disk kullanımı](docs/images/disk-kullanimi.png)
+
 ## GitHub'dan kurulum
 
 Kaynak deposunu klonlayarak:
