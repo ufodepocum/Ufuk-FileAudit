@@ -169,5 +169,4 @@ Test ayrıntıları `TESTING.md` içindedir. Yayın paketini yeniden üretmek i�
 
 ## Lisans
 
-Ufuk-FileAudit, AuditSphere kaynakları üzerine geliştirilmiştir: https://github.com/AuditSphere/AuditSphere
 GPL-3.0 lisans metni korunmuştur. Bu paket kaynak koduyla dağıtılır. Npcap, Python ve Wireshark yükleyicileri paketin içinde değildir; hedef sunucuda resmi kaynaklardan indirilir.
