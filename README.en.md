@@ -156,4 +156,4 @@ Installer tests, web integration tests, a clean-database first-login/password-ch
 
 ## License
 
-Based on [AuditSphere](https://github.com/AuditSphere/AuditSphere). The GPL-3.0 license and upstream attribution are included in `LICENSE` and `NOTICE`. Windows installers for Python, Wireshark and Npcap are downloaded from official sources on the target machine and are not bundled here.
+ The GPL-3.0 license and upstream attribution are included in `LICENSE` and `NOTICE`. Windows installers for Python, Wireshark and Npcap are downloaded from official sources on the target machine and are not bundled here.
