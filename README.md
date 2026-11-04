@@ -38,6 +38,12 @@ curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/i
 sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
 ```
 
+`--source` bir indirme taban adresidir; tarayıcıda açılacak dosya listesi değildir. Bu adresi tek başına açınca GitHub 404 gösterebilir. Kurucu adresin sonuna `SHA256SUMS` ve `Ufuk-FileAudit-1.0.0.tar.gz` ekleyerek dosyaları indirir. Depo ana sayfasının adresini `--source` olarak kullanmayın.
+
+Dosyaları tarayıcıdan görmek için [Sürümler / Releases](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest) sayfasındaki **Assets** bölümünü açın. [Kurulum betiği](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) ve [SHA256 doğrulama dosyası](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) doğrudan indirilebilir.
+
+Yukarıdaki kod bloğundaki iki komutu sırayla kopyalayın; komutlara `&#x20;`, ters eğik çizgi veya Markdown bağlantı işaretleri eklemeyin.
+
 
 ## Web sitenizden kurulum
 

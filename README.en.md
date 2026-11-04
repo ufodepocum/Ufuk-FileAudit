@@ -39,6 +39,12 @@ sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/relea
 
 This repository and its release assets are public, so installation does not require a GitHub account.
 
+`--source` is a download base URL, not a browsable directory. Opening that URL alone may return GitHub's 404 page. The installer appends `SHA256SUMS` and `Ufuk-FileAudit-1.0.0.tar.gz` to download the files. Do not use the repository homepage as `--source`.
+
+To browse downloads, open **Assets** on the [latest release page](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest). The [installer script](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) and [checksum file](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) are direct downloads.
+
+Copy the two commands from the code block in order, without adding HTML entities, backslashes or Markdown link syntax.
+
 ## Host the installer on any website
 
 Extract `Ufuk-FileAudit-Web-Yayin-Paketi.zip` and upload the **contents** of its `Ufuk-FileAudit-Web` folder to any directory on a web server that serves static files.
