@@ -18,4 +18,5 @@ class TokenAuthenticationMiddleware:
                 return JsonResponse({'detail':'IP address not whitelisted'},status=403)
             api_token.last_activity=timezone.now()
             api_token.save(update_fields=['last_activity'])
+            request.audit_client=api_token
         return self.get_response(request)

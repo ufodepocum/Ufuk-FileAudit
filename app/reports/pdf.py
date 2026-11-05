@@ -111,8 +111,8 @@ def logs_pdf(qs,data,user):
         if data.get(key):filters.append(label+': '+ACTIONS.get(data[key],data[key]))
     report.paragraph('Toplam kayıt: '+str(qs.count())+('. Filtreler: '+' · '.join(filters) if filters else '. Tüm kullanıcılar ve paylaşımlar.'))
     report.table([('Tarih / saat',91),('Kullanıcı',102),('İşlem',83),('Paylaşım',92),('Dosya ve ayrıntılar',316),('İstemci IP',93.89)])
-    for entry in qs.iterator(chunk_size=2000):
-        detail=entry.what or '—'
+    for entry in qs.select_related('source').iterator(chunk_size=2000):
+        detail='Sunucu: '+(entry.source.client if entry.source else entry.where)+'\n'+(entry.what or '—')
         for name,label in [('old_path','Önceki yol'),('new_path','Yeni yol'),('old_owner','Önceki sahip'),('new_owner','Yeni sahip'),('old_acl','Önceki izinler'),('new_acl','Yeni izinler')]:
             if getattr(entry,name):detail+='\n'+label+': '+getattr(entry,name)
         share=(entry.share_name or '—').replace('/','\\').rstrip('\\').split('\\')[-1]
@@ -133,8 +133,9 @@ def analytics_pdf(ctx,user):
     report.new_page();report.heading('Dosya sahibine göre disk kullanımı')
     snap=ctx['snapshot']
     if snap:
+        for measurement in ctx.get('snapshots',[]):report.paragraph('Sunucu: '+(measurement.source.client if measurement.source else measurement.host)+' · Ölçüm: '+dt(measurement.completed_at))
         report.paragraph('Ölçüm zamanı: '+dt(snap.completed_at)+f'. Taranan dosya: {snap.files}. Erişim hatası: {snap.errors}. Atlanan bağlantı: {snap.skipped}.')
-        report.paragraph('Rapor bitiş tarihinden önce tamamlanan en son ölçüm kullanılır. Dosya sahibi, dosyayı son düzenleyen veya oluşturan kişiyle aynı olmayabilir. 1 GB = 1.073.741.824 bayt.')
+        report.paragraph('Her sunucu için rapor bitiş tarihinden önce tamamlanan en son ölçüm kullanılır. Dosya sahibi, dosyayı son düzenleyen veya oluşturan kişiyle aynı olmayabilir. 1 GB = 1.073.741.824 bayt.')
         report.table([('Dosya sahibi',293),('Dosya sayısı',95),('Diskte ayrılan alan',140),('Dosya boyutları toplamı',160),('Ölçüm hatası',89.89)])
         for row in ctx['owners']:report.row([row['owner'],row['files'],gb(row['allocated_bytes']),gb(row['logical_bytes']),row['allocation_errors']])
         report.end_table()

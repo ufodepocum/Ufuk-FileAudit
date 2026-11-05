@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,16 +11,17 @@ import uuid
 import datetime
 import hashlib,json
 
-def save_events(serializer):
+def save_events(serializer,source=None):
     many=isinstance(serializer.validated_data,list)
     rows=serializer.validated_data if many else [serializer.validated_data]
     objects=[]
-    fields=[f.name for f in LogEntry._meta.fields if f.name not in ('id','event_key')]
+    fields=[f.name for f in LogEntry._meta.fields if f.name not in ('id','event_key','source')]
     for row in rows:
         normalized={key:row.get(key) for key in fields}
+        normalized['source']=source.pk if source else None
         normalized['when']=row['when'].astimezone(datetime.timezone.utc).isoformat(timespec='microseconds')
         digest=hashlib.sha256(json.dumps(normalized,sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
-        obj,_=LogEntry.objects.get_or_create(event_key=digest,defaults=row)
+        obj,_=LogEntry.objects.get_or_create(event_key=digest,defaults={**row,'source':source})
         objects.append(obj)
     serializer.instance=objects if many else objects[0]
     return objects
@@ -35,14 +37,14 @@ class LogEntryList(APIView):
         if isinstance(data, list):  # Check if incoming data is a list
             serializer = LogEntrySerializer(data=data, many=True)  # Set many=True for batch processing
             if serializer.is_valid():
-                save_events(serializer)
+                save_events(serializer,request._request.audit_client)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Handle single log entry case (optional, based on your requirements)
             serializer = LogEntrySerializer(data=data)
             if serializer.is_valid():
-                save_events(serializer)
+                save_events(serializer,request._request.audit_client)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -68,6 +70,7 @@ def manage_clients(request):
     return render(request, 'monitor/manage_clients.html', {'clients': clients})
 
 @user_passes_test(lambda u: u.is_active and u.is_staff)
+@require_POST
 def disable_client(request, token_id):
     api_token = get_object_or_404(APIToken, id=token_id)
     api_token.is_active = False
@@ -75,6 +78,7 @@ def disable_client(request, token_id):
     return redirect('monitor:clients')
 
 @user_passes_test(lambda u: u.is_active and u.is_staff)
+@require_POST
 def enable_client(request, token_id):
     api_token = get_object_or_404(APIToken, id=token_id)
     api_token.is_active = True
@@ -82,6 +86,7 @@ def enable_client(request, token_id):
     return redirect('monitor:clients')
 
 @user_passes_test(lambda u: u.is_active and u.is_staff)
+@require_POST
 def delete_client(request, token_id):
     api_token = get_object_or_404(APIToken, id=token_id)
     api_token.delete()

@@ -2,6 +2,13 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from .models import InitialAccount
 class FirstLoginTests(TestCase):
+    def test_upgrade_with_named_administrator_does_not_create_default_admin(self):
+        from unittest.mock import patch
+        import bootstrap
+        user=User.objects.create_superuser('existing-owner',password='Existing-owner-pass123')
+        with patch.dict('os.environ',{'FILESERVER_IP':'192.0.2.10'}):bootstrap.initialize()
+        self.assertFalse(User.objects.filter(username='admin').exists())
+        user.refresh_from_db();self.assertTrue(user.check_password('Existing-owner-pass123'))
     def test_default_account_requires_password_change_and_unlocks_after_change(self):
         user=User.objects.create_user('admin',password='admin',is_staff=True,is_superuser=True)
         state=InitialAccount.objects.create(user=user,initial_hash=user.password,must_change=True)

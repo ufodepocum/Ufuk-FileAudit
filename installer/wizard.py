@@ -4,7 +4,7 @@ import argparse,getpass,ipaddress,json,os,secrets,shutil,socket,subprocess,sys,t
 from pathlib import Path
 from urllib.request import urlopen
 
-VERSION='1.0.0'
+VERSION='1.1.0'
 WINDOWS_ROOT=r'C:\ProgramData\Ufuk-FileAudit'
 class SetupError(RuntimeError):pass
 
@@ -81,7 +81,7 @@ def configure_server(root,server_ip,web_ip,port,share_paths):
         if existing.get('FILESERVER_IP') not in (None,server_ip):raise SetupError('Bu kurulum başka bir dosya sunucusuna bağlı. Yeni bir kurulum klasörü kullanın.')
     secret=existing.get('DJANGO_SECRET_KEY') or secrets.token_urlsafe(48)
     write_private(root/'.env',f'WEB_BIND_IP={web_ip}\nWEB_PORT={port}\n')
-    write_private(env,'\n'.join(['DJANGO_SECRET_KEY='+secret,'FILESERVER_IP='+server_ip,'AUDIT_SHARES_JSON='+json.dumps(list(share_paths),ensure_ascii=False),'WEB_ALLOWED_HOSTS=localhost,127.0.0.1,'+web_ip])+'\n')
+    write_private(env,'\n'.join(['DJANGO_SECRET_KEY='+secret,'FILESERVER_IP='+server_ip,'AUDIT_SHARES_JSON='+json.dumps(list(share_paths),ensure_ascii=False),'AUDIT_SHARE_PATHS_JSON='+json.dumps(share_paths,ensure_ascii=False),'WEB_ALLOWED_HOSTS=localhost,127.0.0.1,'+web_ip])+'\n')
     data=root/'data';data.mkdir(exist_ok=True)
     if os.name!='nt':os.chown(data,10001,10001)
     data.chmod(0o750)
@@ -96,7 +96,7 @@ def install_timer(root):
     run_command(['systemctl','enable','--now','ufuk-fileaudit-retention.timer'])
 
 def read_token(root,server_ip):
-    program="import os,django;os.environ.setdefault('DJANGO_SETTINGS_MODULE','AuditSphere.settings');django.setup();from monitor.models import APIToken;print(APIToken.objects.get(client='fileserver-'+os.environ['FILESERVER_IP']).token)"
+    program="import os,django;os.environ.setdefault('DJANGO_SETTINGS_MODULE','AuditSphere.settings');django.setup();from monitor.models import APIToken;print(APIToken.objects.get(server_ip=os.environ['FILESERVER_IP']).token)"
     value=compose(root,'exec','-T','web','python','-c',program,capture=True)
     return str(uuid.UUID(value.splitlines()[-1]))
 
@@ -188,7 +188,9 @@ def perform(root,check_only=False):
     except Exception:
         remote.run((scripts/'rollback.ps1').read_text(encoding='utf-8'),{'backup':activation['backup']})
         raise SetupError('Yeni ajan doğrulanamadı; önceki Windows görevleri geri yüklendi. Ubuntu web arayüzü korunuyor.')
-    print('\nKurulum tamamlandı.\nArayüz: '+url+'\nİlk kullanıcı: admin\nİlk parola: admin\nİlk girişte parolanızı değiştirin. Mevcut hesapların parolaları sıfırlanmaz.\nDisk sahipliği ölçümü arka planda hazırlanır; sonraki ölçümler her gün 03:00’te yapılır.\nYönetici parolası kaydedilmedi; ajanlar SYSTEM hesabıyla çalışır.')
+    program="import os,json,django,sys;os.environ.setdefault('DJANGO_SETTINGS_MODULE','AuditSphere.settings');django.setup();from monitor.models import APIToken;from django.utils import timezone;APIToken.objects.filter(server_ip=os.environ['FILESERVER_IP']).update(share_paths=json.loads(sys.argv[1]),computer_name=sys.argv[2],installed_at=timezone.now(),setup_error='')"
+    compose(root,'exec','-T','web','python','-c',program,json.dumps(selected,ensure_ascii=False),details['computer'])
+    print('\nKurulum tamamlandı.\nArayüz: '+url+'\nYeni kurulumda ilk hesap: admin / admin; ilk girişte parolanızı değiştirin. Mevcut hesaplar ve parolalar korunur.\nDisk sahipliği ölçümü arka planda hazırlanır; sonraki ölçümler her gün 03:00’te yapılır.\nYönetici parolası kaydedilmedi; ajanlar SYSTEM hesabıyla çalışır.')
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description='Ufuk-FileAudit etkileşimli kurulumu')

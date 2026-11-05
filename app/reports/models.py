@@ -7,6 +7,7 @@ class InitialAccount(models.Model):
     initial_hash=models.CharField(max_length=256)
 
 class InventorySnapshot(models.Model):
+    source=models.ForeignKey('monitor.APIToken',on_delete=models.SET_NULL,null=True,blank=True,related_name='snapshots')
     scan_id=models.UUIDField(unique=True)
     started_at=models.DateTimeField(db_index=True)
     completed_at=models.DateTimeField(db_index=True)
@@ -28,6 +29,7 @@ class OwnerUsage(models.Model):
         indexes=[models.Index(fields=['snapshot','share'])]
 
 class ScanRequest(models.Model):
+    source=models.ForeignKey('monitor.APIToken',on_delete=models.CASCADE,null=True,blank=True,related_name='scan_requests')
     created_at=models.DateTimeField(auto_now_add=True)
     requested_by=models.CharField(max_length=200)
     acknowledged_at=models.DateTimeField(null=True,blank=True)

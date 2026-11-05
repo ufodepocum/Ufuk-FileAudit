@@ -21,6 +21,26 @@ Görseller gerçek uygulama arayüzünden, tamamen kurgusal demo verileriyle haz
 
 ![Kullanıcıların dosya sayısı ve GB cinsinden disk kullanımı](docs/images/disk-kullanimi.png)
 
+## Panelden sunucu ve paylaşım yönetimi (1.1.0)
+
+**Yönetim → Sunucular ve paylaşımlar** bölümünde her sunucunun IP adresi, seçilen SMB paylaşımları, Windows disk yolları, kurulum doğrulaması ve son API bağlantısı görünür.
+
+![Örnek verilerle sunucu ve paylaşım listesi](docs/images/sunucular-paylasimlar.png)
+
+![Örnek verilerle paylaşım keşfi ve ajan kurulum adımları](docs/images/sunucu-kurulumu.png)
+
+1. **Yeni sunucu** ile adını ve gerçek IPv4 adresini kaydedin. Bu adım tek başına izlemeyi başlatmaz.
+2. Sunucuyu açın; `DOMAIN\\kullanıcı` veya `SUNUCU\\kullanıcı` yönetici hesabını, parolasını ve Windows'un erişebileceği panel adresini girin. WinRM 5985 erişimi gerekir. Yönetici parolası saklanmaz; yönetim sayfasına HTTPS üzerinden erişmeniz önerilir.
+3. **Sunucuya bağlan ve paylaşımları bul** düğmesi, Windows'tan gerçek SMB paylaşım adlarını ve yerel disk yollarını okur. İzlenecekleri işaretleyin. Seçilen paylaşımlar alt klasörleriyle birlikte izlenir; paylaşılmamış bir yerel klasörü önce Windows'ta paylaşmanız gerekir.
+4. Npcap kontrolünü tamamlayın; eksikse Windows'ta gösterilen yükleyiciyi RDP ile açıp kurun, sonra tekrar kontrol edin. Python ve Wireshark hazırlama adımını çalıştırın.
+5. **Seçimi uygula ve ajanı kur / güncelle** ile SYSTEM görevleri hazırlanır ve API/Npcap/yakalama doğrulanır. Mevcut görevleri değiştirmek için onay kutusunu seçin. Kurulum sırasında kısa bir yakalama kesintisi olur; doğrulama başarısızsa önceki görevler geri alınır.
+
+Sonradan paylaşım eklemek veya çıkarmak için aynı sunucuyu açıp keşif/seçim/uygulama adımlarını tekrarlayın. Tarihçe kayıtları bir yıllık saklama süresi boyunca korunur. **API erişimini durdur** Windows görevlerini kaldırmaz.
+
+Log ve grafik ekranlarında **Dosya sunucusu** filtresi vardır. Birleşik disk raporu, seçili her sunucunun rapor bitişinden önceki en son ölçümünü toplar; ölçüm tarihleri ayrı gösterilir. Ölçüm istekleri yalnızca ilgili sunucuya gönderilir.
+
+Mevcut 1.0.0 kurulumunu 1.1.0 kaynaklarıyla güncellerken `runtime.env`, `.env` ve `data` klasörünü koruyun, ardından kurulum dizininde `sudo bash update.sh` çalıştırın. Betik önce veritabanını yedekler. İlk kurulum sunucusu ve mevcut kayıtlar otomatik ilişkilendirilir; eski kurulumda disk yolları kaydedilmemişse panelde bir kez paylaşım keşfi/güncellemesi yapın.
+
 ## GitHub'dan kurulum
 
 Kaynak deposunu klonlayarak:
@@ -38,7 +58,7 @@ curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/i
 sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
 ```
 
-`--source` bir indirme taban adresidir; tarayıcıda açılacak dosya listesi değildir. Bu adresi tek başına açınca GitHub 404 gösterebilir. Kurucu adresin sonuna `SHA256SUMS` ve `Ufuk-FileAudit-1.0.0.tar.gz` ekleyerek dosyaları indirir. Depo ana sayfasının adresini `--source` olarak kullanmayın.
+`--source` bir indirme taban adresidir; tarayıcıda açılacak dosya listesi değildir. Bu adresi tek başına açınca GitHub 404 gösterebilir. Kurucu adresin sonuna `SHA256SUMS` ve `Ufuk-FileAudit-1.1.0.tar.gz` ekleyerek dosyaları indirir. Depo ana sayfasının adresini `--source` olarak kullanmayın.
 
 Dosyaları tarayıcıdan görmek için [Sürümler / Releases](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest) sayfasındaki **Assets** bölümünü açın. [Kurulum betiği](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) ve [SHA256 doğrulama dosyası](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) doğrudan indirilebilir.
 
@@ -48,7 +68,7 @@ Yukarıdaki kod bloğundaki iki komutu sırayla kopyalayın; komutlara `&#x20;`,
 ## Web sitenizden kurulum
 
 Yayın paketindeki dosyaları web sitenizin **herhangi bir klasörüne** açın. PHP, veritabanı veya özel Git sunucusu gerekmez.
-`install.sh`, `SHA256SUMS` ve `Ufuk-FileAudit-1.0.0.tar.gz` aynı web klasöründe bulunmalıdır.
+`install.sh`, `SHA256SUMS` ve `Ufuk-FileAudit-1.1.0.tar.gz` aynı web klasöründe bulunmalıdır.
 
 Yeni Ubuntu sunucusunda, adresi kendi yüklediğiniz klasörle değiştirin:
 
@@ -67,8 +87,8 @@ bash install.sh --source https://SITENIZ/KLASOR/ --download-only --target ./Ufuk
 ## Elle indirilen kaynakla kurulum
 
 ```bash
-tar -xzf Ufuk-FileAudit-1.0.0.tar.gz
-cd Ufuk-FileAudit-1.0.0
+tar -xzf Ufuk-FileAudit-1.1.0.tar.gz
+cd Ufuk-FileAudit-1.1.0
 sudo bash install.sh
 ```
 

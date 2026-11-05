@@ -1,5 +1,14 @@
 # Doğrulama
 
+1.1.0 yönetim güncellemesi:
+
+- 26 Django testi: önceki raporlama kontrollerine ek olarak yönetici/CSRF yetkileri, gerçek paylaşım keşfi yanıtı, parola saklamama, Npcap eksikken durma, yalnızca keşfedilmiş paylaşımları seçme, mevcut görev onayı, eşzamanlı kurulum kilidi, doğrulama/geri alma ve sunucu bazında log, envanter ve ölçüm isteği ayrımı. Windows yanıtları bu testlerde simüle edilir.
+- Canlı veritabanının ayrı kopyasında yükseltme: mevcut log/ölçüm/kullanıcı sayıları ve parola hashleri korunur; eski kayıtların ilk sunucuya ilişkilendirilmesi doğrulanır. Mevcut yönetici varsa varsayılan admin/admin hesabı oluşturulmaz.
+- Gerçek tarayıcıda sunucu listesi, paylaşım seçimi, Npcap geri bildirimi ve mobil genişlik kontrolü. Windows keşif yanıtları arayüz testinde simüle edilir; README görsellerinde yalnızca kurgusal demo verileri bulunur.
+- PowerShell sözdizimi, Bash sözdizimi ve 7 kurucu testi.
+
+Yeni bir Windows sunucusuna panelden sıfırdan gerçek kurulum bu doğrulamaların kapsamına dahil değildir. Mevcut sunucunun yönetici parolası panelde girildikten sonra gerçek keşif ve kurulum kontrolü yapılabilir.
+
 1.0.0 paketinin hazırlığı sırasında:
 
 - Kurucu için 7 test geçti: Npcap kontrolü, ip/paylaşım doğrulama, yönetici parolasını saklamama, bilinmeyen kurulum klasörünü koruma, akış simülasyonu ve WinRM parçalı aktarım/temizlik.

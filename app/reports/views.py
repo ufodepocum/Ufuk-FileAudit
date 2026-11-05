@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.decorators import login_required,user_passes_test
 from django.db import transaction
-from django.db.models import Count,Sum,Q
+from django.db.models import Count,Sum,Q,Max
 from django.db.models.functions import TruncDate
 from django.http import HttpResponse,JsonResponse
 from django.shortcuts import render,redirect
@@ -24,6 +24,7 @@ def filtered(request):
     qs=LogEntry.objects.filter(when__gte=cutoff())
     if not valid:return form,qs.none()
     qs=qs.filter(when__gte=data['start_date_parsed'],when__lte=data['end_date_parsed'])
+    if data.get('server'):qs=qs.filter(source_id=data['server'])
     for field in ['who','host']:
         if data.get(field):qs=qs.filter(**{field+'__icontains':data[field]})
     if data.get('share_name'):qs=qs.filter(Q(share_name__iexact=data['share_name'])|Q(share_name__iendswith='\\'+data['share_name']))
@@ -58,13 +59,13 @@ def logs(request):
         return logs_pdf(qs,form.cleaned_data,request.user.username)
     if form.is_valid() and request.GET.get('export')=='csv':
         r=HttpResponse(content_type='text/csv; charset=utf-8');r['Content-Disposition']='attachment; filename="Ufuk-FileAudit-Loglar.csv"';r.write('\ufeff')
-        w=csv.writer(r);w.writerow(['Tarih ve saat','Kullanıcı','İşlem','Paylaşım','Dosya','Yeni yol','İstemci IP','Durum'])
+        w=csv.writer(r);w.writerow(['Tarih ve saat','Kullanıcı','İşlem','Paylaşım','Dosya','Yeni yol','İstemci IP','Durum','Dosya sunucusu'])
         def cell(value):
             value='' if value is None else str(value)
             return "'"+value if value.lstrip().startswith(('=','+','-','@')) else value
-        for e in qs.iterator(chunk_size=2000):w.writerow([cell(v) for v in [timezone.localtime(e.when).strftime('%d.%m.%Y %H:%M:%S'),e.who,ACTIONS.get(e.action,e.action),e.share_name,e.what,e.new_path,e.host,{'Success':'Başarılı','Failed':'Başarısız'}.get(e.status,e.status)]])
+        for e in qs.select_related('source').iterator(chunk_size=2000):w.writerow([cell(v) for v in [timezone.localtime(e.when).strftime('%d.%m.%Y %H:%M:%S'),e.who,ACTIONS.get(e.action,e.action),e.share_name,e.what,e.new_path,e.host,{'Success':'Başarılı','Failed':'Başarısız'}.get(e.status,e.status),e.source.client if e.source else e.where]])
         return r
-    ctx=base_context(request,form);ctx['page_obj']=Paginator(qs,50).get_page(request.GET.get('page'));ctx['total']=qs.count()
+    ctx=base_context(request,form);ctx['page_obj']=Paginator(qs.select_related('source'),50).get_page(request.GET.get('page'));ctx['total']=qs.count()
     return render(request,'reports/logs.html',ctx,status=200 if form.is_valid() else 400)
 
 def rankings(qs,action):
@@ -82,11 +83,21 @@ def analytics_context(request,form,qs):
     for row in timeline:row['width']=max(1,round(row['total']/highest*100,2))
     ctx['timeline']=timeline
     end=form.cleaned_data.get('end_date_parsed') or timezone.now()
-    snap=InventorySnapshot.objects.filter(completed_at__gte=cutoff(),completed_at__lte=end).first()
+    snapshots=InventorySnapshot.objects.filter(completed_at__gte=cutoff(),completed_at__lte=end).select_related('source')
+    if form.cleaned_data.get('server'):snapshots=snapshots.filter(source_id=form.cleaned_data['server'])
+    # Take one latest completed measurement per server, including legacy unassigned data.
+    latest=snapshots.order_by().values('source_id').annotate(latest=Max('completed_at'))
+    selected=[]
+    for row in latest:
+        item=snapshots.filter(source_id=row['source_id'],completed_at=row['latest']).order_by('-id').first()
+        if item:selected.append(item)
+    ctx['snapshots']=selected
+    from types import SimpleNamespace
+    snap=(selected[0] if len(selected)==1 else SimpleNamespace(completed_at=min(s.completed_at for s in selected),files=sum(s.files for s in selected),errors=sum(s.errors for s in selected),skipped=sum(s.skipped for s in selected))) if selected else None
     ctx['snapshot']=snap
     owners=[]
     if snap:
-        rows=snap.owners.all()
+        rows=OwnerUsage.objects.filter(snapshot__in=selected)
         if form.cleaned_data.get('share_name'):rows=rows.filter(share__iexact=form.cleaned_data['share_name'])
         if form.cleaned_data.get('who'):rows=rows.filter(owner__icontains=form.cleaned_data['who'])
         order='-files' if request.GET.get('owner_order')=='files' else '-allocated_bytes'
@@ -94,8 +105,11 @@ def analytics_context(request,form,qs):
         maximum=max([r['allocated_bytes'] for r in owners],default=1) or 1
         for r in owners:r['width']=max(1,round(r['allocated_bytes']/maximum*100,2))
     ctx['owners']=owners;ctx['top_owners']=owners[:15]
-    last_scan=ScanRequest.objects.order_by('-created_at').first();ctx['scan_request']=last_scan
-    ctx['active_client']=APIToken.objects.filter(client='fileserver-'+settings.FILESERVER_IP).first()
+    requests=ScanRequest.objects.order_by('-created_at')
+    clients=APIToken.objects.filter(is_active=True)
+    if form.cleaned_data.get('server'):
+        requests=requests.filter(source_id=form.cleaned_data['server']);clients=clients.filter(pk=form.cleaned_data['server'])
+    ctx['scan_request']=requests.first();ctx['active_client']=clients.order_by('-last_activity').first()
     return ctx
 
 @login_required
@@ -112,7 +126,12 @@ def home(request):return redirect('reports:graphs')
 @require_POST
 @user_passes_test(lambda u:u.is_active and u.is_staff)
 def request_scan(request):
-    if not ScanRequest.objects.filter(created_at__gte=timezone.now()-timedelta(minutes=15)).exists():ScanRequest.objects.create(requested_by=request.user.username)
+    servers=APIToken.objects.filter(is_active=True,server_ip__isnull=False)
+    if request.POST.get('server'):
+        if not request.POST['server'].isdigit():return JsonResponse({'detail':'Geçersiz sunucu'},status=400)
+        servers=servers.filter(pk=request.POST['server'])
+    for server in servers:
+        if not ScanRequest.objects.filter(source=server,created_at__gte=timezone.now()-timedelta(minutes=15)).exists():ScanRequest.objects.create(source=server,requested_by=request.user.username)
     return redirect('/grafikler/?scan=requested')
 
 @csrf_exempt
@@ -128,14 +147,16 @@ def inventory_ingest(request):
         if not isinstance(owners,list) or len(owners)>10000:raise ValueError('Geçersiz sahip listesi')
         clean=[]
         for row in owners:
-            if row['share'].casefold() not in {str(x).casefold() for x in settings.AUDIT_SHARES}:raise ValueError('Geçersiz paylaşım')
+            allowed=request.audit_client.share_paths or dict.fromkeys(settings.AUDIT_SHARES)
+            if row['share'].casefold() not in {str(x).casefold() for x in allowed}:raise ValueError('Geçersiz paylaşım')
             numeric={k:int(row.get(k,0)) for k in ['files','logical_bytes','allocated_bytes','allocation_errors']}
             if any(v<0 or v>9223372036854775807 for v in numeric.values()):raise ValueError('Geçersiz boyut')
             clean.append(OwnerUsage(owner=str(row['owner'])[:256],share=row['share'],**numeric))
         errors=int(data.get('errors',0));skipped=int(data.get('skipped',0))
         if errors<0 or skipped<0:raise ValueError('Geçersiz sayaç')
         with transaction.atomic():
-            snap,created=InventorySnapshot.objects.get_or_create(scan_id=sid,defaults={'started_at':start,'completed_at':end,'host':request.META['REMOTE_ADDR'],'errors':errors,'skipped':skipped,'files':sum(r.files for r in clean)})
+            snap,created=InventorySnapshot.objects.get_or_create(scan_id=sid,defaults={'source':request.audit_client,'started_at':start,'completed_at':end,'host':request.META['REMOTE_ADDR'],'errors':errors,'skipped':skipped,'files':sum(r.files for r in clean)})
+            if snap.source_id!=request.audit_client.pk:raise ValueError('Ölçüm başka sunucuya ait')
             if created:
                 for r in clean:r.snapshot=snap
                 OwnerUsage.objects.bulk_create(clean,batch_size=500)
@@ -145,7 +166,7 @@ def inventory_ingest(request):
 @csrf_exempt
 def scan_poll(request):
     if request.method!='GET':return JsonResponse({'detail':'GET gerekli'},status=405)
-    row=ScanRequest.objects.filter(acknowledged_at__isnull=True).order_by('created_at').first()
+    row=ScanRequest.objects.filter(source=request.audit_client,acknowledged_at__isnull=True).order_by('created_at').first()
     return JsonResponse({'request_id':row.id if row else None})
 
 @csrf_exempt
@@ -153,6 +174,6 @@ def scan_poll(request):
 def scan_ack(request):
     try:
         data=json.loads(request.body)
-        ScanRequest.objects.filter(id=int(data['request_id'])).update(acknowledged_at=timezone.now())
+        ScanRequest.objects.filter(id=int(data['request_id']),source=request.audit_client).update(acknowledged_at=timezone.now())
         return JsonResponse({'ok':True})
     except (ValueError,TypeError,KeyError):return JsonResponse({'detail':'Geçersiz istek'},status=400)

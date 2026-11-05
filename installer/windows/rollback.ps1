@@ -1,6 +1,7 @@
 $root='C:\ProgramData\Ufuk-FileAudit'
 $backup=[IO.Path]::GetFullPath([string]$cfg.backup)
 if (-not $backup.StartsWith($root+'\backups\',[StringComparison]::OrdinalIgnoreCase)) {throw 'Gecersiz geri donus klasoru.'}
+if (-not (Test-Path -LiteralPath (Join-Path $backup 'backup-ready'))) {'UNCHANGED';return}
 foreach ($name in @('Ufuk-FileAudit','Ufuk-FileAudit-Envanter')) {
  Stop-ScheduledTask $name -ErrorAction SilentlyContinue
  Unregister-ScheduledTask $name -Confirm:$false -ErrorAction SilentlyContinue
@@ -11,5 +12,5 @@ foreach ($name in @('Ufuk-FileAudit','Ufuk-FileAudit-Envanter')) {
  $xml=Join-Path $backup ($name+'.xml')
  if (Test-Path -LiteralPath $xml) {Register-ScheduledTask -TaskName $name -Xml (Get-Content -LiteralPath $xml -Raw) -Force | Out-Null;Start-ScheduledTask $name}
 }
-@{product='Ufuk-FileAudit';version='1.0.0';state='rolled_back'}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
+@{product='Ufuk-FileAudit';version='1.1.0';state='rolled_back'}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
 'ROLLBACK_COMPLETE'

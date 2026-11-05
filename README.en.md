@@ -20,6 +20,26 @@ Captured from the actual application interface using entirely fictional demo dat
 
 ![File counts and disk space in GB by owner](docs/images/disk-kullanimi.png)
 
+## Manage servers and shares in the panel (1.1.0)
+
+Open **Yönetim → Sunucular ve paylaşımlar** (Administration → Servers and shares). Each record shows its IPv4 address, selected SMB shares, local Windows paths, installation verification and last API contact.
+
+![Server and share list with fictional demo data](docs/images/sunucular-paylasimlar.png)
+
+![Share discovery and deployment steps with fictional demo data](docs/images/sunucu-kurulumu.png)
+
+1. Register a name and the server's real IPv4 address. Registration alone does not start monitoring.
+2. Open the record and enter a `DOMAIN\\user` or `SERVER\\user` administrator account, password and the panel URL reachable from Windows. WinRM port 5985 must be reachable. Administrator passwords are not stored; use HTTPS for the management page.
+3. Discover shares from Windows, then select the actual share names and local paths to monitor. Selected shares include their subfolders. Create an SMB share in Windows first if the local folder is not shared.
+4. Check Npcap. If missing, complete its graphical installer through RDP and check again. Prepare Python and Wireshark using the next button.
+5. Apply the selection and install/update the agent. Existing tasks require the explicit replacement checkbox. SYSTEM tasks, API access, Npcap and capture are verified. Updating briefly interrupts capture; a verification failure restores previous tasks.
+
+To add or remove monitored shares later, reopen the same record and repeat discovery, selection and deployment. Historical logs remain until their one-year retention expires. Disabling API access does not uninstall Windows tasks.
+
+Logs and charts have a server filter. Combined disk reports sum each selected server's latest completed measurement before the report end, with individual measurement timestamps. Scan requests are isolated per server.
+
+When upgrading a 1.0.0 installation with 1.1.0 source, preserve `runtime.env`, `.env` and `data`, then run `sudo bash update.sh` from the installation directory. It backs up the database before migration. Existing primary-server logs are associated automatically. Older installations without stored disk paths need one discovery/update from the panel to verify those paths.
+
 ## Install from GitHub
 
 Clone the source repository:
@@ -39,7 +59,7 @@ sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/relea
 
 This repository and its release assets are public, so installation does not require a GitHub account.
 
-`--source` is a download base URL, not a browsable directory. Opening that URL alone may return GitHub's 404 page. The installer appends `SHA256SUMS` and `Ufuk-FileAudit-1.0.0.tar.gz` to download the files. Do not use the repository homepage as `--source`.
+`--source` is a download base URL, not a browsable directory. Opening that URL alone may return GitHub's 404 page. The installer appends `SHA256SUMS` and `Ufuk-FileAudit-1.1.0.tar.gz` to download the files. Do not use the repository homepage as `--source`.
 
 To browse downloads, open **Assets** on the [latest release page](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest). The [installer script](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) and [checksum file](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) are direct downloads.
 
@@ -53,7 +73,7 @@ Keep these files together:
 
 - `install.sh`
 - `SHA256SUMS`
-- `Ufuk-FileAudit-1.0.0.tar.gz`
+- `Ufuk-FileAudit-1.1.0.tar.gz`
 
 The package also includes a source-code browser, download page, ZIP archive and a static HTTP Git repository. PHP and a website database are not required.
 
@@ -75,8 +95,8 @@ bash install.sh --source https://YOUR-SITE/YOUR-FOLDER/ --download-only --target
 ## Install an extracted archive
 
 ```bash
-tar -xzf Ufuk-FileAudit-1.0.0.tar.gz
-cd Ufuk-FileAudit-1.0.0
+tar -xzf Ufuk-FileAudit-1.1.0.tar.gz
+cd Ufuk-FileAudit-1.1.0
 sudo bash install.sh
 ```
 

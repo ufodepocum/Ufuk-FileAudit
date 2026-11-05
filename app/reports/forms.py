@@ -8,6 +8,7 @@ from .retention import cutoff
 
 ACTIONS={'Created':'Oluşturuldu','Modified':'Değiştirildi','Accessed':'Okundu / erişildi','Renamed':'Yeniden adlandırıldı','Moved':'Taşındı','Removed':'Silindi','Copied':'Kopyalandı (doğrulandı)','Owner Changed':'Dosya sahibi değişti','ACL modified':'İzinler değişti'}
 class Filters(forms.Form):
+    server=forms.ChoiceField(label='Dosya sunucusu',required=False,choices=[('','Tüm sunucular')])
     start_date=forms.CharField(label='Başlangıç tarihi ve saati',required=False,widget=forms.TextInput(attrs={'placeholder':'GG.AA.YYYY SS:DD','data-audit-date':'true','autocomplete':'off'}))
     end_date=forms.CharField(label='Bitiş tarihi ve saati',required=False,widget=forms.TextInput(attrs={'placeholder':'GG.AA.YYYY SS:DD','data-audit-date':'true','autocomplete':'off'}))
     who=forms.CharField(label='Kullanıcı',required=False,max_length=200,widget=forms.TextInput(attrs={'placeholder':'Örn. DOMAIN\\kullanıcı'}))
@@ -17,7 +18,14 @@ class Filters(forms.Form):
     host=forms.CharField(label='İstemci IP adresi',required=False,max_length=100)
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.fields['share_name'].choices=[('','Tüm paylaşımlar')]+[(x,x) for x in settings.AUDIT_SHARES]
+        from monitor.models import APIToken
+        servers=list(APIToken.objects.filter(server_ip__isnull=False).order_by('client'))
+        self.fields['server'].choices=[('','Tüm sunucular')]+[(str(s.pk),s.client+' · '+s.server_ip) for s in servers]
+        chosen=self.data.get('server') if self.is_bound else self.initial.get('server')
+        names=set(settings.AUDIT_SHARES if not chosen else [])
+        for server in servers:
+            if not chosen or str(server.pk)==str(chosen):names.update(server.share_paths)
+        self.fields['share_name'].choices=[('','Tüm paylaşımlar')]+[(x,x) for x in sorted(names)]
 
     def clean(self):
         data=super().clean();now=timezone.now();tz=timezone.get_current_timezone()

@@ -1,12 +1,16 @@
 $root='C:\ProgramData\Ufuk-FileAudit'
 $backup=Join-Path $root ('backups\'+(Get-Date -Format yyyyMMdd-HHmmss))
+if ($cfg.backup) {$backup=$cfg.backup}
 New-Item -ItemType Directory -Force $backup | Out-Null
 if (Test-Path "$root\agent\config.json") {Copy-Item -LiteralPath "$root\agent" -Destination "$backup\agent" -Recurse}
 foreach ($name in @('Ufuk-FileAudit','Ufuk-FileAudit-Envanter')) {
  if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {
   Export-ScheduledTask $name | Set-Content (Join-Path $backup ($name+'.xml')) -Encoding Unicode
-  Stop-ScheduledTask $name
  }
+}
+[IO.File]::WriteAllText((Join-Path $backup 'backup-ready'),'ready')
+foreach ($name in @('Ufuk-FileAudit','Ufuk-FileAudit-Envanter')) {
+ if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {Stop-ScheduledTask $name}
 }
 # Only processes belonging to the previous or new Ufuk-FileAudit installation.
 Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -and ($_.ExecutablePath.StartsWith($root+'\',[StringComparison]::OrdinalIgnoreCase) -or ($cfg.migrate -and $_.ExecutablePath.StartsWith('C:\ProgramData\AuditSpherePilot\',[StringComparison]::OrdinalIgnoreCase)))} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}
@@ -20,5 +24,5 @@ foreach ($pair in @(@('Ufuk-FileAudit','launcher.py'),@('Ufuk-FileAudit-Envanter
  Register-ScheduledTask -TaskName $pair[0] -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
  Start-ScheduledTask $pair[0]
 }
-@{product='Ufuk-FileAudit';version='1.0.0';state='active';api_url=$cfg.api_url}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
+@{product='Ufuk-FileAudit';version='1.1.0';state='active';api_url=$cfg.api_url}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
 [pscustomobject]@{state='AGENT_STARTED';backup=$backup}|ConvertTo-Json -Compress
