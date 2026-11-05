@@ -1,5 +1,13 @@
 # Değişiklikler
 
+## 1.1.1 - 2026-11-05
+
+- Paylaşım ekleme/güncellemede ajanın başlamasını engelleyen eksik `pdml_parser.py` dağıtıma eklendi.
+- Eski veya sistem geneli imzalı Wireshark 4.6.9 kurulumu yeni ajan klasöründe yeniden kullanılabilir.
+- Çalışan ajan durdurulmadan önce dosya, Python modülü, ayrıştırıcı ve tshark varlığı doğrulanır.
+- Hata durumunda parola/anahtar göstermeden aşama ve tanımlı hata kodu gösterilir.
+- Mevcut Windows sunucusunda ek paylaşım için gerçek SMB oluşturma/yazma/silme olaylarıyla doğrulandı.
+
 ## 1.1.0 - 2026-11-05
 
 - Panelden Windows sunucusu kaydı, gerçek SMB paylaşımı/disk yolu keşfi, paylaşım seçimi, Npcap ve bağımlılık hazırlığı, ajan kurma/güncelleme ve doğrulama/geri alma.

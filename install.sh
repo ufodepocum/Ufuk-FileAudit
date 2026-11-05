@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Ufuk-FileAudit 1.1.0: extracted-source installer and website bootstrap.
+# Ufuk-FileAudit 1.1.1: extracted-source installer and website bootstrap.
 set -euo pipefail
-VERSION=1.1.0
+VERSION=1.1.1
 SOURCE_URL=''
 DEST=/opt/ufuk-fileaudit
 DOWNLOAD_ONLY=0

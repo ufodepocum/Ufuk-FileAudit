@@ -24,5 +24,5 @@ foreach ($pair in @(@('Ufuk-FileAudit','launcher.py'),@('Ufuk-FileAudit-Envanter
  Register-ScheduledTask -TaskName $pair[0] -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
  Start-ScheduledTask $pair[0]
 }
-@{product='Ufuk-FileAudit';version='1.1.0';state='active';api_url=$cfg.api_url}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
+@{product='Ufuk-FileAudit';version='1.1.1';state='active';api_url=$cfg.api_url}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
 [pscustomobject]@{state='AGENT_STARTED';backup=$backup}|ConvertTo-Json -Compress

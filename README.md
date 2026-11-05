@@ -23,6 +23,8 @@ Görseller gerçek uygulama arayüzünden, tamamen kurgusal demo verileriyle haz
 
 ## Panelden sunucu ve paylaşım yönetimi (1.1.0)
 
+**1.1.1 düzeltmesi:** Paylaşım güncellemesinde eksik ayrıştırıcı dosyası ve mevcut Wireshark kurulumunun yeniden kullanımı düzeltildi. Çalışan ajan durdurulmadan önce dosyalar ve Python modülleri kontrol edilir; hata oluşursa aşama ve güvenli hata kodu gösterilir.
+
 **Yönetim → Sunucular ve paylaşımlar** bölümünde her sunucunun IP adresi, seçilen SMB paylaşımları, Windows disk yolları, kurulum doğrulaması ve son API bağlantısı görünür.
 
 ![Örnek verilerle sunucu ve paylaşım listesi](docs/images/sunucular-paylasimlar.png)
@@ -58,7 +60,7 @@ curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/i
 sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
 ```
 
-`--source` bir indirme taban adresidir; tarayıcıda açılacak dosya listesi değildir. Bu adresi tek başına açınca GitHub 404 gösterebilir. Kurucu adresin sonuna `SHA256SUMS` ve `Ufuk-FileAudit-1.1.0.tar.gz` ekleyerek dosyaları indirir. Depo ana sayfasının adresini `--source` olarak kullanmayın.
+`--source` bir indirme taban adresidir; tarayıcıda açılacak dosya listesi değildir. Bu adresi tek başına açınca GitHub 404 gösterebilir. Kurucu adresin sonuna `SHA256SUMS` ve `Ufuk-FileAudit-1.1.1.tar.gz` ekleyerek dosyaları indirir. Depo ana sayfasının adresini `--source` olarak kullanmayın.
 
 Dosyaları tarayıcıdan görmek için [Sürümler / Releases](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest) sayfasındaki **Assets** bölümünü açın. [Kurulum betiği](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) ve [SHA256 doğrulama dosyası](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) doğrudan indirilebilir.
 
@@ -68,7 +70,7 @@ Yukarıdaki kod bloğundaki iki komutu sırayla kopyalayın; komutlara `&#x20;`,
 ## Web sitenizden kurulum
 
 Yayın paketindeki dosyaları web sitenizin **herhangi bir klasörüne** açın. PHP, veritabanı veya özel Git sunucusu gerekmez.
-`install.sh`, `SHA256SUMS` ve `Ufuk-FileAudit-1.1.0.tar.gz` aynı web klasöründe bulunmalıdır.
+`install.sh`, `SHA256SUMS` ve `Ufuk-FileAudit-1.1.1.tar.gz` aynı web klasöründe bulunmalıdır.
 
 Yeni Ubuntu sunucusunda, adresi kendi yüklediğiniz klasörle değiştirin:
 
@@ -87,7 +89,7 @@ bash install.sh --source https://SITENIZ/KLASOR/ --download-only --target ./Ufuk
 ## Elle indirilen kaynakla kurulum
 
 ```bash
-tar -xzf Ufuk-FileAudit-1.1.0.tar.gz
+tar -xzf Ufuk-FileAudit-1.1.1.tar.gz
 cd Ufuk-FileAudit-1.1.0
 sudo bash install.sh
 ```

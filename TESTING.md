@@ -1,5 +1,13 @@
 # Doğrulama
 
+1.1.1 düzeltmesi:
+
+- Eksik yerel PDML ayrıştırıcısını paket içinde yakalayan ve gerçek iç içe/tekrarlı PDML alanlarını ayrıştıran regresyon testleri; toplam 9 kurucu/paket testi.
+- Ajan ön kontrolü başarısızken mevcut görevleri değiştirmeyen ve hata mesajında yönetici parolasını göstermeyen kontrol; toplam 27 Django testi.
+- Mevcut Windows Server üzerinde staging ön kontrolü, imzalı Wireshark 4.6.9 yeniden kullanımı, ajan görevlerinin güncellenmesi ve API/Npcap/tshark doğrulaması gerçek ortamda çalıştırıldı. Yeni eklenen paylaşımda geçici bir dosyanın oluşturma, yazma ve silme olaylarının Ubuntu'ya ulaştığı doğrulandı.
+
+Bu gerçek Windows doğrulaması mevcut sunucunun yükseltilmesini kapsar; sıfırdan yeni Windows kurulumu değildir.
+
 1.1.0 yönetim güncellemesi:
 
 - 26 Django testi: önceki raporlama kontrollerine ek olarak yönetici/CSRF yetkileri, gerçek paylaşım keşfi yanıtı, parola saklamama, Npcap eksikken durma, yalnızca keşfedilmiş paylaşımları seçme, mevcut görev onayı, eşzamanlı kurulum kilidi, doğrulama/geri alma ve sunucu bazında log, envanter ve ölçüm isteği ayrımı. Windows yanıtları bu testlerde simüle edilir.

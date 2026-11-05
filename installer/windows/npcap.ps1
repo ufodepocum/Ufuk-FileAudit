@@ -4,7 +4,7 @@ if (Test-Path -LiteralPath $root) {
 }
 New-Item -ItemType Directory -Force $root,"$root\downloads","$root\agent","$root\stage\agent","$root\python","$root\logs","$root\inventory","$root\backups" | Out-Null
 icacls $root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
-@{product='Ufuk-FileAudit';version='1.1.0';state='preparing'}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
+@{product='Ufuk-FileAudit';version='1.1.1';state='preparing'}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
 $service=Get-Service npcap -ErrorAction SilentlyContinue
 if ($service -and $service.Status -ne 'Running') {Start-Service npcap -ErrorAction SilentlyContinue}
 $service=Get-Service npcap -ErrorAction SilentlyContinue

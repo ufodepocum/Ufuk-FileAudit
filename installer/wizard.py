@@ -4,7 +4,7 @@ import argparse,getpass,ipaddress,json,os,secrets,shutil,socket,subprocess,sys,t
 from pathlib import Path
 from urllib.request import urlopen
 
-VERSION='1.1.0'
+VERSION='1.1.1'
 WINDOWS_ROOT=r'C:\ProgramData\Ufuk-FileAudit'
 class SetupError(RuntimeError):pass
 
@@ -180,6 +180,7 @@ def perform(root,check_only=False):
     files[WINDOWS_ROOT+r'\stage\agent\config.json']=json.dumps(agent_config,ensure_ascii=False,indent=2)
     files[WINDOWS_ROOT+r'\stage\uninstall.ps1']=(root/'agent/uninstall.ps1').read_bytes()
     remote.put_files(files)
+    remote.run((scripts/'validate-agent.ps1').read_text(encoding='utf-8'))
     activation=json.loads(remote.run((scripts/'activate.ps1').read_text(encoding='utf-8'),{'migrate':migrate,'api_url':url}))
     print('\n7/7 API, Npcap ve paket yakalama doğrulanıyor')
     try:

@@ -23,11 +23,30 @@ if (-not(Test-Path "$root\python\Lib\site-packages\pip")) {
 }
 Invoke-Python @('-m','pip','install','--disable-pip-version-check','--no-warn-script-location','-r',"$root\downloads\agent-requirements.txt") "$root\logs\dependencies.log"
 if (-not(Test-Path "$root\Wireshark\tshark.exe")) {
+ # Upgrades may already have Wireshark in the legacy or machine-wide directory.
+ # Reuse the verified runtime without asking its installer to relocate an existing installation.
+ foreach ($candidate in @('C:\ProgramData\AuditSpherePilot\Wireshark','C:\Program Files\Wireshark')) {
+  $exe=Join-Path $candidate 'tshark.exe'
+  if (Test-Path -LiteralPath $exe) {
+   $sig=Get-AuthenticodeSignature $exe
+   $version=(Get-Item -LiteralPath $exe).VersionInfo.ProductVersion
+   if ($sig.Status -eq 'Valid' -and $sig.SignerCertificate.Subject -like '*Wireshark Foundation*' -and $version -like '4.6.9*') {
+    New-Item -ItemType Directory -Force "$root\Wireshark" | Out-Null
+    Get-ChildItem -LiteralPath $candidate -Force | Copy-Item -Destination "$root\Wireshark" -Recurse -Force
+    break
+   }
+  }
+ }
+}
+if (-not(Test-Path "$root\Wireshark\tshark.exe")) {
  Invoke-WebRequest 'https://2.na.dl.wireshark.org/win64/Wireshark-4.6.9-x64.exe' -OutFile "$root\downloads\wireshark.exe" -UseBasicParsing
  $sig=Get-AuthenticodeSignature "$root\downloads\wireshark.exe"
  if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notlike '*Wireshark Foundation*') {throw 'Wireshark imzasi dogrulanamadi.'}
  $p=Start-Process "$root\downloads\wireshark.exe" -ArgumentList '/S','/desktopicon=no','/quicklaunchicon=no',"/D=$root\Wireshark" -WindowStyle Hidden -Wait -PassThru
  if ($p.ExitCode -ne 0) {throw "Wireshark kurulum kodu: $($p.ExitCode)"}
 }
+$sig=Get-AuthenticodeSignature "$root\Wireshark\tshark.exe"
+if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notlike '*Wireshark Foundation*') {throw 'TSHARK_SIGNATURE_INVALID'}
 & "$root\Wireshark\tshark.exe" -D | Out-String
+if ($LASTEXITCODE -ne 0) {throw 'TSHARK_RUNTIME_INVALID'}
 'DEPENDENCIES_READY'

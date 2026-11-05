@@ -2,7 +2,7 @@ name: ufuk-fileaudit
 services:
   web:
     build: .
-    image: ufuk-fileaudit:1.1.0
+    image: ufuk-fileaudit:1.1.1
     restart: unless-stopped
     ports:
       - "${WEB_BIND_IP:-0.0.0.0}:${WEB_PORT:-8085}:8000"

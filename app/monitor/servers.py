@@ -61,6 +61,22 @@ def server_detail(request,token_id):
 
 def script(name):return (ROOT/'installer/windows'/name).read_text(encoding='utf-8')
 
+def safe_failure(error,step):
+    codes={
+        'TSHARK_MISSING':'Wireshark/tshark eksik. Python ve Wireshark hazırlama adımını tamamlayın.',
+        'TSHARK_SIGNATURE_INVALID':'Wireshark imzası doğrulanamadı.',
+        'TSHARK_RUNTIME_INVALID':'Wireshark çalıştırılamadı.',
+        'AGENT_PYTHON_MISSING':'Ajan Python bileşeni eksik.',
+        'MISSING_AGENT_FILES':'Ajan paketinde gerekli dosya eksik; kurulum paketini güncelleyin.',
+        'MISSING_PYTHON_MODULES':'Ajan Python bağımlılığı eksik; bileşen hazırlama adımını tekrarlayın.',
+        'AGENT_API_UNREACHABLE':'Windows sunucusundan panel API adresine erişilemiyor. Panel adresini ve izin verilen IP bilgisini kontrol edin.',
+        'AGENT_CAPTURE_NOT_RUNNING':'Paket yakalama başlamadı. Windows üzerindeki capture-error.log ve agent-console.log dosyalarını kontrol edin.',
+        'NPCAP_NOT_RUNNING':'Npcap servisi çalışmıyor.',
+    }
+    for code,message in codes.items():
+        if code in str(error):return step+': '+message+' ['+code+']'
+    return step+' tamamlanamadı. Windows kurulum loglarını kontrol edin.'
+
 def inspect(remote,server):
     details=json.loads(remote.run(script('preflight.ps1'),{'server_ip':server.server_ip}))
     aliases=list(dict.fromkeys(row['InterfaceAlias'] for row in details['interfaces']))
@@ -82,6 +98,7 @@ def server_action(request,token_id):
     stamp=timezone.now()
     claimed=APIToken.objects.filter(pk=server.pk).filter(Q(setup_started__isnull=True)|Q(setup_started__lt=stamp-timedelta(minutes=30))).update(setup_started=stamp)
     if not claimed:return JsonResponse({'error':'Bu sunucuda başka bir işlem sürüyor. Tamamlanmasını bekleyin.'},status=409)
+    step='Windows yönetim bağlantısı'
     try:
         from installer.remote import WindowsRemote
         remote=WindowsRemote(server.server_ip,username,password)
@@ -97,6 +114,7 @@ def server_action(request,token_id):
         # Creates protected staging directories even when Npcap was installed separately.
         if remote.run(script('npcap.ps1'))!='READY':raise SetupValidation('Npcap hazır değil.')
         if action=='dependencies':
+            step='Python ve Wireshark hazırlığı'
             remote.put_files({WINDOWS_ROOT+r'\downloads\agent-requirements.txt':(ROOT/'agent/requirements.txt').read_bytes()})
             remote.run(script('dependencies.ps1'))
             return JsonResponse({'message':'Python ve Wireshark bileşenleri hazır. Seçtiğiniz paylaşımları kaydedip ajanı kurabilirsiniz.'})
@@ -114,26 +132,34 @@ def server_action(request,token_id):
         files[WINDOWS_ROOT+r'\stage\agent\config.json']=json.dumps(config,ensure_ascii=False)
         files[WINDOWS_ROOT+r'\stage\uninstall.ps1']=(ROOT/'agent/uninstall.ps1').read_bytes()
         remote.put_files(files)
+        # Catch missing files/imports before stopping or replacing a working agent.
+        step='Ajan ön kontrolü'
+        validation=json.loads(remote.run(script('validate-agent.ps1')))
+        if not validation.get('ok'):raise SetupValidation('Ajan dosyaları veya Python bileşenleri eksik. Bileşen hazırlama adımını tekrar çalıştırın.')
         # Allow the newly installed agent to upload its initial inventory while verification runs.
         previous=server.share_paths
         APIToken.objects.filter(pk=server.pk).update(share_paths=paths)
         backup=WINDOWS_ROOT+'\\backups\\panel-'+uuid.uuid4().hex
         try:
+            step='Ajan görevlerini başlatma'
             remote.run(script('activate.ps1'),{'migrate':bool(details['tasks']),'api_url':url,'backup':backup})
+            step='Ajan doğrulaması'
             result=json.loads(remote.run(script('verify.ps1')))
             if result.get('api_status')!=201 or result.get('capture')!='Running':raise SetupValidation('API veya paket yakalama doğrulanamadı.')
-        except Exception:
+        except Exception as failure:
             APIToken.objects.filter(pk=server.pk).update(share_paths=previous)
             try:remote.run(script('rollback.ps1'),{'backup':backup})
             except Exception:raise SetupValidation('Kurulum doğrulanamadı; geri alma da tamamlanamadı. Windows görevlerini kontrol edin.') from None
-            raise SetupValidation('Kurulum doğrulanamadı; önceki ajan ayarları ve görevleri geri yüklendi.') from None
+            raise SetupValidation(safe_failure(failure,step)+' Önceki ajan ayarları ve görevleri geri yüklendi.') from None
         APIToken.objects.filter(pk=server.pk).update(share_paths=paths,computer_name=details['computer'],installed_at=timezone.now(),setup_error='')
         return JsonResponse({'message':'Ajan ve API doğrulandı. İzlenen paylaşımlar kaydedildi. Disk ölçümü arka planda hazırlanıyor.','reload':True})
     except SetupValidation as error:
         # Only locally generated messages are exposed. Remote exceptions may contain sensitive output.
+        APIToken.objects.filter(pk=server.pk).update(setup_error=str(error)[:500])
         return JsonResponse({'error':str(error)},status=400)
-    except Exception:
-        APIToken.objects.filter(pk=server.pk).update(setup_error='Windows adımı tamamlanamadı. WinRM, yönetici hesabı ve Windows kurulum loglarını kontrol edin.')
-        return JsonResponse({'error':'Windows adımı tamamlanamadı. WinRM 5985 erişimini, yönetici hesabını ve C:\\ProgramData\\Ufuk-FileAudit\\logs klasörünü kontrol edin. Bu adımdan tekrar deneyebilirsiniz.'},status=400)
+    except Exception as error:
+        message=safe_failure(error,step)
+        APIToken.objects.filter(pk=server.pk).update(setup_error=message[:500])
+        return JsonResponse({'error':message},status=400)
     finally:
         APIToken.objects.filter(pk=server.pk,setup_started=stamp).update(setup_started=None)

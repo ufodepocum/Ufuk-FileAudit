@@ -12,5 +12,5 @@ foreach ($name in @('Ufuk-FileAudit','Ufuk-FileAudit-Envanter')) {
  $xml=Join-Path $backup ($name+'.xml')
  if (Test-Path -LiteralPath $xml) {Register-ScheduledTask -TaskName $name -Xml (Get-Content -LiteralPath $xml -Raw) -Force | Out-Null;Start-ScheduledTask $name}
 }
-@{product='Ufuk-FileAudit';version='1.1.0';state='rolled_back'}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
+@{product='Ufuk-FileAudit';version='1.1.1';state='rolled_back'}|ConvertTo-Json|Set-Content "$root\installation.json" -Encoding UTF8
 'ROLLBACK_COMPLETE'

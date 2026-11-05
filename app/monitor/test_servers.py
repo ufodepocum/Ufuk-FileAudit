@@ -75,7 +75,7 @@ class ServerManagementTests(TestCase):
         self.assertEqual(r.status_code,400);remote.put_files.assert_not_called()
     @patch('installer.remote.WindowsRemote')
     def test_verified_deployment_records_actual_disk_paths(self,Remote):
-        remote=Remote.return_value;remote.run.side_effect=[json.dumps(self.details),'READY','{}',json.dumps({'api_status':201,'capture':'Running'})]
+        remote=Remote.return_value;remote.run.side_effect=[json.dumps(self.details),'READY',json.dumps({'ok':True}),'{}',json.dumps({'api_status':201,'capture':'Running'})]
         r=self.client.post(self.url,self.credentials|{'action':'deploy'})
         self.assertEqual(r.status_code,200,r.content)
         self.a.refresh_from_db();self.assertTrue(self.a.installed_at);self.assertEqual(self.a.share_paths,{'Veri':'D:\\Veri'})
@@ -83,10 +83,21 @@ class ServerManagementTests(TestCase):
         self.assertEqual(config['shares'],['Veri']);self.assertNotIn('password',config)
     @patch('installer.remote.WindowsRemote')
     def test_failed_verification_rolls_back_without_claiming_installed(self,Remote):
-        remote=Remote.return_value;remote.run.side_effect=[json.dumps(self.details),'READY','{}',json.dumps({'api_status':500}),'ROLLBACK_COMPLETE']
+        remote=Remote.return_value;remote.run.side_effect=[json.dumps(self.details),'READY',json.dumps({'ok':True}),'{}',json.dumps({'api_status':500}),'ROLLBACK_COMPLETE']
         r=self.client.post(self.url,self.credentials|{'action':'deploy'})
         self.assertEqual(r.status_code,400);self.assertIn('geri yüklendi',r.json()['error'])
         self.a.refresh_from_db();self.assertFalse(self.a.installed_at);self.assertEqual(self.a.share_paths,{'Veri':'D:\\Veri'})
+    @patch('installer.remote.WindowsRemote')
+    def test_missing_agent_file_is_caught_before_stopping_existing_agent(self,Remote):
+        from installer.remote import RemoteError
+        remote=Remote.return_value
+        remote.run.side_effect=[json.dumps(self.details),'READY',RemoteError('AGENT_RUNTIME_INVALID: MISSING_AGENT_FILES pdml_parser.py Never-save-this-password')]
+        r=self.client.post(self.url,self.credentials|{'action':'deploy'})
+        self.assertEqual(r.status_code,400)
+        self.assertIn('MISSING_AGENT_FILES',r.json()['error']);self.assertNotIn(self.credentials['password'],r.json()['error'])
+        self.assertEqual(remote.run.call_count,3)
+        self.a.refresh_from_db();self.assertEqual(self.a.share_paths,{'Veri':'D:\\Veri'});self.assertFalse(self.a.installed_at)
+        self.assertNotIn(self.credentials['password'],self.a.setup_error)
     def test_scan_requests_cannot_be_taken_or_acknowledged_by_another_server(self):
         scan=ScanRequest.objects.create(source=self.a,requested_by='manager')
         self.assertIsNone(self.api(self.b,'/monitor/api/scan/',method='get').json()['request_id'])
