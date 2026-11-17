@@ -109,12 +109,12 @@ class Report:
 def logs_pdf(qs,data,user):
     report=Report('Dosya işlem kayıtları',data['start_date_parsed'],data['end_date_parsed'],user)
     filters=[]
-    for key,label in [('who','Kullanıcı'),('share_name','Paylaşım'),('action','İşlem'),('search','Arama'),('host','İstemci IP')]:
+    for key,label in [('actor','İşlemi yapan kullanıcı'),('who','Kullanıcı'),('share_name','Paylaşım'),('action','İşlem'),('search','Arama'),('host','İstemci IP')]:
         if data.get(key):filters.append(label+': '+ACTIONS.get(data[key],data[key]))
     report.paragraph('Toplam kayıt: '+str(qs.count())+('. Filtreler: '+' · '.join(filters) if filters else '. Tüm kullanıcılar ve paylaşımlar.'))
     report.table([('Tarih / saat',91),('Kullanıcı',102),('İşlem',83),('Paylaşım',92),('Dosya ve ayrıntılar',316),('İstemci IP',93.89)])
     for entry in qs.select_related('source').iterator(chunk_size=2000):
-        detail='Sunucu: '+(entry.source.client if entry.source else entry.where)+'\n'+(entry.what or '—')
+        detail='Sunucu: '+(entry.source.client if entry.source else entry.where)+'\n'+entry.display_path
         for name,label in [('old_path','Önceki yol'),('new_path','Yeni yol'),('old_owner','Önceki sahip'),('new_owner','Yeni sahip'),('old_acl','Önceki izinler'),('new_acl','Yeni izinler')]:
             if getattr(entry,name):detail+='\n'+label+': '+getattr(entry,name)
         share=(entry.share_name or '—').replace('/','\\').rstrip('\\').split('\\')[-1]

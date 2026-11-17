@@ -10,3 +10,5 @@ document.querySelectorAll('[data-audit-date]').forEach(input=>{const box=documen
  form.addEventListener('submit',()=>{if(toggle.checked){const hidden=document.createElement('input');hidden.type='hidden';hidden.name='live';hidden.value='1';form.append(hidden);form.elements.end_date.disabled=true;}});
  setInterval(()=>{if(toggle.checked&&!document.hidden)refresh();},30000);
 })();
+
+(()=>{const button=document.getElementById('activity-day-apply');if(!button)return;button.addEventListener('click',()=>{const input=document.getElementById('activity-day');if(!input.value){input.focus();return;}const form=document.getElementById('filters');form.elements.start_date.value=input.value+'T00:00';form.elements.end_date.value=input.value+'T23:59';const live=document.getElementById('audit-live');if(live)live.checked=false;form.requestSubmit();});})();

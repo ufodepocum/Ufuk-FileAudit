@@ -18,13 +18,15 @@ from .retention import cutoff,purge
 from monitor.models import LogEntry,APIToken
 
 def filtered(request):
-    form=Filters(request.GET if request.GET else None)
-    if not form.is_bound:form=Filters({})
+    activity=request.path=='/logs/'
+    form=Filters(request.GET if request.GET else None,activity=activity)
+    if not form.is_bound:form=Filters({},activity=activity)
     valid=form.is_valid();data=form.cleaned_data
     qs=LogEntry.objects.filter(when__gte=cutoff())
     if not valid:return form,qs.none()
     qs=qs.filter(when__gte=data['start_date_parsed'],when__lte=data['end_date_parsed'])
     if data.get('server'):qs=qs.filter(source_id=data['server'])
+    if data.get('actor'):qs=qs.filter(who__iexact=data['actor'])
     for field in ['who','host']:
         if data.get(field):qs=qs.filter(**{field+'__icontains':data[field]})
     if data.get('share_name'):qs=qs.filter(Q(share_name__iexact=data['share_name'])|Q(share_name__iendswith='\\'+data['share_name']))
@@ -48,7 +50,7 @@ def base_context(request,form):
                 if timezone.is_naive(parsed):parsed=timezone.make_aware(parsed)
                 display_values[key]=timezone.localtime(parsed).strftime('%d.%m.%Y %H:%M')
         except (ValueError,TypeError):pass
-    display=Filters(display_values)
+    display=Filters(display_values,activity=request.path=='/logs/')
     return {'filter_form':display,'query':values.urlencode(),'min_date':timezone.localtime(cutoff()).strftime('%Y-%m-%dT%H:%M'),'max_date':now.strftime('%Y-%m-%dT%H:%M'),'range_start':form.cleaned_data.get('start_date_parsed'),'range_end':form.cleaned_data.get('end_date_parsed'),'filter_errors':form.errors,'section':'logs','product_name':settings.APP_DISPLAY_NAME}
 
 @login_required
@@ -63,9 +65,20 @@ def logs(request):
         def cell(value):
             value='' if value is None else str(value)
             return "'"+value if value.lstrip().startswith(('=','+','-','@')) else value
-        for e in qs.select_related('source').iterator(chunk_size=2000):w.writerow([cell(v) for v in [timezone.localtime(e.when).strftime('%d.%m.%Y %H:%M:%S'),e.who,ACTIONS.get(e.action,e.action),e.share_name,e.what,e.new_path,e.host,{'Success':'Başarılı','Failed':'Başarısız'}.get(e.status,e.status),e.source.client if e.source else e.where]])
+        for e in qs.select_related('source').iterator(chunk_size=2000):w.writerow([cell(v) for v in [timezone.localtime(e.when).strftime('%d.%m.%Y %H:%M:%S'),e.who,ACTIONS.get(e.action,e.action),e.share_name,e.display_path,e.new_path,e.host,{'Success':'Başarılı','Failed':'Başarısız'}.get(e.status,e.status),e.source.client if e.source else e.where]])
         return r
     ctx=base_context(request,form);ctx['page_obj']=Paginator(qs.select_related('source'),50).get_page(request.GET.get('page'));ctx['total']=qs.count()
+    counts=dict(qs.values('action').annotate(n=Count('id')).values_list('action','n'))
+    ctx['activity_counts']=[{'label':label,'count':counts.get(action,0)} for action,label in [('Accessed','Okundu / erişildi'),('Removed','Silindi'),('Created','Oluşturuldu'),('Modified','Değiştirildi')]]
+    if form.is_valid() and form.cleaned_data.get('actor'):
+        history=LogEntry.objects.filter(when__gte=cutoff(),who__iexact=form.cleaned_data['actor'])
+        if form.cleaned_data.get('server'):history=history.filter(source_id=form.cleaned_data['server'])
+        last=history.order_by('-when').first()
+        if last:
+            ctx['actor_last_seen']=last.when
+            params=request.GET.copy();params.pop('page',None);params.pop('export',None);params.pop('live',None);day=timezone.localtime(last.when).strftime('%Y-%m-%d')
+            params['start_date']=day;params['end_date']=day;params.pop('action',None);params.pop('search',None);params.pop('host',None);params.pop('who',None);params.pop('share_name',None)
+            ctx['actor_last_day_query']=params.urlencode()
     return render(request,'reports/logs.html',ctx,status=200 if form.is_valid() else 400)
 
 def rankings(qs,action):

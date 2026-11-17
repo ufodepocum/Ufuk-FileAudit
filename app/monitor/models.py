@@ -28,6 +28,14 @@ class APIToken(models.Model):
 
 
 class LogEntry(models.Model):
+    @property
+    def display_path(self):
+        import ntpath
+        path=self.what or ''
+        if path in ('','Unknown'):return path or '—'
+        if path.startswith('\\\\') or ntpath.splitdrive(path)[0]:return path
+        share=(self.share_name or '').replace('/','\\').rstrip('\\')
+        return share+'\\'+path.lstrip('\\/') if share.startswith('\\\\') else path
     source = models.ForeignKey(APIToken,on_delete=models.SET_NULL,null=True,blank=True,related_name='events')
     event_key = models.CharField(max_length=64, unique=True, null=True, blank=True, editable=False)
     when = models.DateTimeField(db_index=True)

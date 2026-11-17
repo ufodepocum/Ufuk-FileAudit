@@ -8,6 +8,7 @@ from .retention import cutoff
 
 ACTIONS={'Created':'Oluşturuldu','Modified':'Değiştirildi','Accessed':'Okundu / erişildi','Renamed':'Yeniden adlandırıldı','Moved':'Taşındı','Removed':'Silindi','Copied':'Kopyalandı (doğrulandı)','Owner Changed':'Dosya sahibi değişti','ACL modified':'İzinler değişti'}
 class Filters(forms.Form):
+    actor=forms.ChoiceField(label='İşlemi yapan kullanıcı',required=False,choices=[('','Tüm kullanıcılar')])
     server=forms.ChoiceField(label='Dosya sunucusu',required=False,choices=[('','Tüm sunucular')])
     start_date=forms.CharField(label='Başlangıç tarihi ve saati',required=False,widget=forms.TextInput(attrs={'placeholder':'GG.AA.YYYY SS:DD','data-audit-date':'true','autocomplete':'off'}))
     end_date=forms.CharField(label='Bitiş tarihi ve saati',required=False,widget=forms.TextInput(attrs={'placeholder':'GG.AA.YYYY SS:DD','data-audit-date':'true','autocomplete':'off'}))
@@ -17,7 +18,14 @@ class Filters(forms.Form):
     search=forms.CharField(label='Dosya veya klasör ara',required=False,max_length=500)
     host=forms.CharField(label='İstemci IP adresi',required=False,max_length=100)
     def __init__(self,*args,**kwargs):
+        activity=kwargs.pop('activity',False)
         super().__init__(*args,**kwargs)
+        if activity:
+            from monitor.models import LogEntry
+            actors=LogEntry.objects.filter(when__gte=cutoff()).exclude(who='').order_by('who').values_list('who',flat=True).distinct()
+            self.fields['actor'].choices=[('','Tüm kullanıcılar')]+[(a,a) for a in actors]
+            self.fields['who'].label='Kullanıcı metni ara (isteğe bağlı)'
+        else:self.fields.pop('actor')
         from monitor.models import APIToken
         servers=list(APIToken.objects.filter(server_ip__isnull=False).order_by('client'))
         self.fields['server'].choices=[('','Tüm sunucular')]+[(str(s.pk),s.client+' · '+s.server_ip) for s in servers]
