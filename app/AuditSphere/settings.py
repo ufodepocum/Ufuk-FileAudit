@@ -37,3 +37,5 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 import json
 FILESERVER_IP = os.environ.get("FILESERVER_IP", "")
 AUDIT_SHARES = json.loads(os.environ.get("AUDIT_SHARES_JSON", "[\"Veri\"]"))
+
+APP_DISPLAY_NAME=(os.environ.get("APP_DISPLAY_NAME", "Ufuk-FileAudit").strip() or "Ufuk-FileAudit")[:40]

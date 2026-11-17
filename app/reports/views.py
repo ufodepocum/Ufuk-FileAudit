@@ -49,7 +49,7 @@ def base_context(request,form):
                 display_values[key]=timezone.localtime(parsed).strftime('%d.%m.%Y %H:%M')
         except (ValueError,TypeError):pass
     display=Filters(display_values)
-    return {'filter_form':display,'query':values.urlencode(),'min_date':timezone.localtime(cutoff()).strftime('%Y-%m-%dT%H:%M'),'max_date':now.strftime('%Y-%m-%dT%H:%M'),'range_start':form.cleaned_data.get('start_date_parsed'),'range_end':form.cleaned_data.get('end_date_parsed'),'filter_errors':form.errors,'section':'logs','product_name':'Ufuk-FileAudit'}
+    return {'filter_form':display,'query':values.urlencode(),'min_date':timezone.localtime(cutoff()).strftime('%Y-%m-%dT%H:%M'),'max_date':now.strftime('%Y-%m-%dT%H:%M'),'range_start':form.cleaned_data.get('start_date_parsed'),'range_end':form.cleaned_data.get('end_date_parsed'),'filter_errors':form.errors,'section':'logs','product_name':settings.APP_DISPLAY_NAME}
 
 @login_required
 def logs(request):

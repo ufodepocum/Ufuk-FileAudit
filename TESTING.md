@@ -1,5 +1,8 @@
 # Doğrulama
 
+1.2.1: 31 Django testi ve 10 kurucu/paket testi. Özel adın giriş ekranında, panelde ve PDF meta verisinde kullanılması; geçersiz adları reddetme; güncellemede adı koruma ve Bash üzerinden boşluklu `--name` aktarımı doğrulandı.
+
+
 1.1.1 düzeltmesi:
 
 - Eksik yerel PDML ayrıştırıcısını paket içinde yakalayan ve gerçek iç içe/tekrarlı PDML alanlarını ayrıştıran regresyon testleri; toplam 9 kurucu/paket testi.

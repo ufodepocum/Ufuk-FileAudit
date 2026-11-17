@@ -7,6 +7,15 @@ from installer import wizard
 from installer.remote import WindowsRemote,RemoteError
 
 class InstallerTests(unittest.TestCase):
+    def test_custom_display_name_is_validated_and_preserved_on_update(self):
+        with tempfile.TemporaryDirectory() as tmp,patch.object(wizard.os,'chown',create=True):
+            root=Path(tmp)
+            wizard.configure_server(root,'192.0.2.10','192.0.2.20',8085,{'Veri':r'D:\Veri'},'Firma Denetim')
+            self.assertIn('APP_DISPLAY_NAME=Firma Denetim\n',(root/'runtime.env').read_text())
+            wizard.configure_server(root,'192.0.2.10','192.0.2.20',8085,{'Veri':r'D:\Veri'})
+            self.assertIn('APP_DISPLAY_NAME=Firma Denetim\n',(root/'runtime.env').read_text())
+        for name in ['','A\nWEB_ALLOWED_HOSTS=*','<script>','x'*41]:
+            with self.assertRaises(wizard.SetupError):wizard.display_name(name)
     def test_ipv4_and_share_names_are_validated(self):
         self.assertEqual(wizard.ipv4('192.0.2.10'),'192.0.2.10')
         for value in ['192.0.2.10;whoami','0.0.0.0','127.0.0.1','224.0.0.1','300.0.0.1']:

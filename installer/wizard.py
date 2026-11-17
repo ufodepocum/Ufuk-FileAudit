@@ -4,9 +4,14 @@ import argparse,getpass,ipaddress,json,os,secrets,shutil,socket,subprocess,sys,t
 from pathlib import Path
 from urllib.request import urlopen
 
-VERSION='1.2.0'
+VERSION='1.2.1'
 WINDOWS_ROOT=r'C:\ProgramData\Ufuk-FileAudit'
 class SetupError(RuntimeError):pass
+
+def display_name(value):
+    value=value.strip()
+    if not re.fullmatch(r'[\w .()\-]{1,40}',value):raise SetupError('Görünen ad 1-40 karakter olmalı; harf, sayı, boşluk, nokta, parantez, alt çizgi ve tire kullanılabilir.')
+    return value
 
 def ipv4(value):
     try:
@@ -72,7 +77,7 @@ def compose(root,*args,capture=False):
     result=run_command(['docker','compose','--project-directory',str(root),*args],cwd=root,text=True,capture_output=capture)
     return result.stdout.strip() if capture else ''
 
-def configure_server(root,server_ip,web_ip,port,share_paths):
+def configure_server(root,server_ip,web_ip,port,share_paths,name=None):
     env=root/'runtime.env';existing={}
     if env.exists():
         for line in env.read_text(encoding='utf-8').splitlines():
@@ -80,8 +85,9 @@ def configure_server(root,server_ip,web_ip,port,share_paths):
             if sep:existing[key]=value
         if existing.get('FILESERVER_IP') not in (None,server_ip):raise SetupError('Bu kurulum başka bir dosya sunucusuna bağlı. Yeni bir kurulum klasörü kullanın.')
     secret=existing.get('DJANGO_SECRET_KEY') or secrets.token_urlsafe(48)
+    name=display_name(name or existing.get('APP_DISPLAY_NAME') or 'Ufuk-FileAudit')
     write_private(root/'.env',f'WEB_BIND_IP={web_ip}\nWEB_PORT={port}\n')
-    write_private(env,'\n'.join(['DJANGO_SECRET_KEY='+secret,'FILESERVER_IP='+server_ip,'AUDIT_SHARES_JSON='+json.dumps(list(share_paths),ensure_ascii=False),'AUDIT_SHARE_PATHS_JSON='+json.dumps(share_paths,ensure_ascii=False),'WEB_ALLOWED_HOSTS=localhost,127.0.0.1,'+web_ip])+'\n')
+    write_private(env,'\n'.join(['DJANGO_SECRET_KEY='+secret,'APP_DISPLAY_NAME='+name,'FILESERVER_IP='+server_ip,'AUDIT_SHARES_JSON='+json.dumps(list(share_paths),ensure_ascii=False),'AUDIT_SHARE_PATHS_JSON='+json.dumps(share_paths,ensure_ascii=False),'WEB_ALLOWED_HOSTS=localhost,127.0.0.1,'+web_ip])+'\n')
     data=root/'data';data.mkdir(exist_ok=True)
     if os.name!='nt':os.chown(data,10001,10001)
     data.chmod(0o750)
@@ -127,7 +133,7 @@ def suggested_ip(server_ip):
             sock.connect((server_ip,445));return sock.getsockname()[0]
     except OSError:return ''
 
-def perform(root,check_only=False):
+def perform(root,check_only=False,name=None):
     try:from .remote import WindowsRemote
     except ImportError:from remote import WindowsRemote
     previous=json.loads((root/'installation.json').read_text()) if (root/'installation.json').exists() else {}
@@ -165,7 +171,7 @@ def perform(root,check_only=False):
     print('\n3/7 Windows Npcap denetimi')
     wait_for_npcap(remote,(scripts/'npcap.ps1').read_text(encoding='utf-8'))
     print('\n4/7 Ubuntu web uygulaması kuruluyor')
-    configure_server(root,server_ip,web_ip,port,selected)
+    configure_server(root,server_ip,web_ip,port,selected,name)
     compose(root,'build');compose(root,'up','-d')
     url=f'http://{web_ip}:{port}';wait_web(url)
     token=read_token(root,server_ip)
@@ -197,6 +203,7 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description='Ufuk-FileAudit etkileşimli kurulumu')
     parser.add_argument('--root',type=Path,default=Path('/opt/ufuk-fileaudit'))
     parser.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1])
+    parser.add_argument('--name',type=display_name,help='Arayüz ve PDF raporlarında görünen ad (1-40 karakter)')
     parser.add_argument('--stage-only',action='store_true');parser.add_argument('--plan',action='store_true');parser.add_argument('--check',action='store_true')
     args=parser.parse_args(argv)
     if args.plan:
@@ -204,7 +211,7 @@ def main(argv=None):
     if os.name!='posix' or os.geteuid()!=0:raise SetupError('Bu kurulum Ubuntu üzerinde sudo/root yetkisiyle çalıştırılmalı.')
     root=stage(args.source_root,args.root)
     if args.stage_only:print('Kaynak hazır: '+str(root));return 0
-    perform(root,args.check);return 0
+    perform(root,args.check,args.name);return 0
 
 if __name__=='__main__':
     try:sys.exit(main())

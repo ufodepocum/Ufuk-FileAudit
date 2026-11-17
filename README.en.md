@@ -4,6 +4,16 @@
 
 File auditing and reporting for Windows file servers. The web application runs on Ubuntu in Docker. The SMB auditing agent and disk inventory worker run on Windows as SYSTEM.
 
+## Choose a different display name during installation (1.2.1+)
+
+```bash
+curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh -o install.sh
+sudo bash install.sh --name "Company-FileAudit" --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
+```
+
+For an extracted source checkout: `sudo bash install.sh --name "Company-FileAudit"`.
+This changes the login page, panel and PDF report branding (1–40 characters). Internal service/task names, download filenames and the default installation directory stay fixed for update/uninstall compatibility. It does not create a separate second installation. The name is saved as `APP_DISPLAY_NAME` in `runtime.env` and preserved on updates. Without this option the default name is used.
+
 ## 1.2.0: full folder details and live reports
 
 - Open **Tüm kullanıcıların klasörleri** under disk usage to list full nested directory paths for every file owner, with file counts, allocated bytes and logical sizes. Owner links filter the list to one owner.
@@ -70,7 +80,7 @@ sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/relea
 
 This repository and its release assets are public, so installation does not require a GitHub account.
 
-`--source` is a download base URL, not a browsable directory. Opening that URL alone may return GitHub's 404 page. The installer appends `SHA256SUMS` and `Ufuk-FileAudit-1.2.0.tar.gz` to download the files. Do not use the repository homepage as `--source`.
+`--source` is a download base URL, not a browsable directory. Opening that URL alone may return GitHub's 404 page. The installer appends `SHA256SUMS` and `Ufuk-FileAudit-1.2.1.tar.gz` to download the files. Do not use the repository homepage as `--source`.
 
 To browse downloads, open **Assets** on the [latest release page](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest). The [installer script](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) and [checksum file](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) are direct downloads.
 
@@ -84,7 +94,7 @@ Keep these files together:
 
 - `install.sh`
 - `SHA256SUMS`
-- `Ufuk-FileAudit-1.2.0.tar.gz`
+- `Ufuk-FileAudit-1.2.1.tar.gz`
 
 The package also includes a source-code browser, download page, ZIP archive and a static HTTP Git repository. PHP and a website database are not required.
 
@@ -106,7 +116,7 @@ bash install.sh --source https://YOUR-SITE/YOUR-FOLDER/ --download-only --target
 ## Install an extracted archive
 
 ```bash
-tar -xzf Ufuk-FileAudit-1.2.0.tar.gz
+tar -xzf Ufuk-FileAudit-1.2.1.tar.gz
 cd Ufuk-FileAudit-1.1.0
 sudo bash install.sh
 ```

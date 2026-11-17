@@ -1,5 +1,6 @@
 """Bounded-memory, Unicode PDF reports for all rows in the selected range."""
 from tempfile import SpooledTemporaryFile
+from django.conf import settings
 from datetime import datetime
 from django.http import FileResponse
 from django.utils import timezone
@@ -37,20 +38,21 @@ class Report:
     def __init__(self,title,start,end,requested_by):
         self.file=SpooledTemporaryFile(max_size=8*1024*1024,mode='w+b')
         self.c=canvas.Canvas(self.file,pagesize=landscape(A4),pageCompression=1)
-        self.c.setTitle('Ufuk-FileAudit - '+title);self.c.setAuthor('Ufuk-FileAudit')
+        self.brand=settings.APP_DISPLAY_NAME
+        self.c.setTitle(self.brand+' - '+title);self.c.setAuthor(self.brand)
         self.w,self.h=landscape(A4);self.title=title;self.start=start;self.end=end;self.user=requested_by;self.page=0;self.y=0;self.columns=None
         self.new_page()
     def text(self,x,y,text,size=8,bold=False,color=INK):
         self.c.setFillColor(HexColor(color));self.c.setFont('DejaVuBold' if bold else 'DejaVu',size);self.c.drawString(x,y,str(text))
     def footer(self):
         self.c.setStrokeColor(HexColor(BORDER));self.c.line(32,32,self.w-32,32)
-        self.text(32,19,'Ufuk-FileAudit · Türkiye saati (UTC+3) · '+self.user[:64],7,color=MUTED)
+        self.text(32,19,self.brand+' · Türkiye saati (UTC+3) · '+self.user[:64],7,color=MUTED)
         self.text(self.w-85,19,'Sayfa '+str(self.page),7,color=MUTED)
     def new_page(self):
         if self.page:self.footer();self.c.showPage()
         self.page+=1
         self.c.setFillColor(HexColor(BLUE));self.c.roundRect(32,self.h-58,27,27,6,fill=1,stroke=0)
-        self.text(39,self.h-49,'U',17,True,'#ffffff');self.text(70,self.h-45,'Ufuk-FileAudit',17,True)
+        self.text(39,self.h-49,'U',17,True,'#ffffff');self.text(70,self.h-45,self.brand,min(17,440/max(1,pdfmetrics.stringWidth(self.brand,'DejaVuBold',17))*17),True)
         self.text(32,self.h-84,self.title,12,True)
         self.text(32,self.h-101,dt(self.start)+' — '+dt(self.end),8,color=MUTED)
         self.text(self.w-205,self.h-45,'Oluşturma: '+dt(timezone.now()),7,color=MUTED)

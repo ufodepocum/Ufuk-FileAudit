@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Ufuk-FileAudit 1.2.0: extracted-source installer and website bootstrap.
+# Ufuk-FileAudit 1.2.1: extracted-source installer and website bootstrap.
 set -euo pipefail
-VERSION=1.2.0
+VERSION=1.2.1
 SOURCE_URL=''
 DEST=/opt/ufuk-fileaudit
 DOWNLOAD_ONLY=0
@@ -11,9 +11,10 @@ while (($#)); do
  case "$1" in
   --source) SOURCE_URL="${2:?Web klasörü adresi gerekli}";shift 2;;
   --target) DEST="${2:?Hedef klasör gerekli}";shift 2;;
+  --name) PASS+=("--name" "${2:?Görünen uygulama adı gerekli}");shift 2;;
   --download-only) DOWNLOAD_ONLY=1;shift;;
   --plan) PLAN=1;shift;;
-  --help|-h) printf '%s\n' 'Ufuk-FileAudit kurulumu' 'sudo bash install.sh [--source https://site/klasor/] [--target /opt/ufuk-fileaudit]' 'bash install.sh --source URL --download-only --target ./kaynak' 'bash install.sh --plan (yerel kaynaktan değişiklik yapmadan akışı gösterir)';exit 0;;
+  --help|-h) printf '%s\n' 'Ufuk-FileAudit kurulumu' 'sudo bash install.sh [--name "Firma-FileAudit"] [--source https://site/klasor/] [--target /opt/ufuk-fileaudit]' 'bash install.sh --source URL --download-only --target ./kaynak' 'bash install.sh --plan (yerel kaynaktan değişiklik yapmadan akışı gösterir)';exit 0;;
   *) PASS+=("$1");shift;;
  esac
 done

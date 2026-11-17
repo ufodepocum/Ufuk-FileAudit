@@ -1,5 +1,10 @@
 # Değişiklikler
 
+## 1.2.1 - 2026-11-17
+
+- `--name` ile kurulum sırasında arayüz ve PDF görünen adını özelleştirme; güncellemelerde adı koruma.
+
+
 ## 1.2.0 - 2026-11-17
 
 - Tüm sahiplerin tam alt klasör yolları, arama, sayfalama ve eksiksiz CSV çıktısı.

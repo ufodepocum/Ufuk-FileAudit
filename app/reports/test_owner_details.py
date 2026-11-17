@@ -1,12 +1,18 @@
 from datetime import timedelta
 from uuid import uuid4
-from django.test import TestCase
+from django.test import TestCase,override_settings
 from django.contrib.auth.models import User
 from django.utils import timezone
 from monitor.models import APIToken,LogEntry
 from .models import InventorySnapshot,FolderUsage
 
 class OwnerDetailTests(TestCase):
+    @override_settings(APP_DISPLAY_NAME='Firma Denetim')
+    def test_custom_brand_is_used_in_login_dashboard_and_pdf_metadata(self):
+        self.assertContains(self.client.get('/logs/'),'Firma Denetim')
+        response=self.client.get('/logs/',self.params|{'export':'pdf'})
+        self.assertIn(b'Firma Denetim',b''.join(response.streaming_content))
+        self.client.logout();self.assertContains(self.client.get('/login/'),'Firma Denetim')
     def setUp(self):
         self.client.force_login(User.objects.create_user('reader',password='test-password'))
         self.now=timezone.now();self.params={'start_date':(self.now-timedelta(hours=1)).isoformat(),'end_date':self.now.isoformat()}

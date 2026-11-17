@@ -5,6 +5,18 @@
 Windows dosya sunucuları için Türkçe denetim, grafik ve PDF raporlama uygulaması.
 Web uygulaması Ubuntu'da Docker ile; SMB ajanı ve disk envanteri Windows'ta SYSTEM hesabıyla çalışır.
 
+## Kurulumda farklı bir isim kullanma (1.2.1+)
+
+Kurucuyu indirin ve istediğiniz görünen adı `--name` ile yazın:
+
+```bash
+curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh -o install.sh
+sudo bash install.sh --name "Firma-FileAudit" --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
+```
+
+Kaynak kodunu zaten indirdiyseniz kısa komut: `sudo bash install.sh --name "Firma-FileAudit"`.
+Ad; giriş ekranında, panelde ve PDF raporlarının içinde görünür. 1–40 karakter kullanılabilir. Servis/görev adları, indirme dosyaları ve varsayılan kurulum klasörü güncelleme/kaldırma uyumluluğu için sabit kalır. Bu seçenek ayrı bir ikinci kurulum oluşturmaz. Ad `runtime.env` içindeki `APP_DISPLAY_NAME` ayarına kaydedilir; sonraki güncellemelerde korunur. Seçenek verilmezse varsayılan ad kullanılır.
+
 ## 1.2.0: tam klasör ayrıntıları ve canlı raporlar
 
 - Grafikler → Dosya sahibine göre disk kullanımı → **Tüm kullanıcıların klasörleri**: her sahibin tüm alt klasör yolları, dosya sayısı, ayrılan alan ve dosya boyutları.
@@ -69,7 +81,7 @@ curl -fL https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/i
 sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/
 ```
 
-`--source` bir indirme taban adresidir; tarayıcıda açılacak dosya listesi değildir. Bu adresi tek başına açınca GitHub 404 gösterebilir. Kurucu adresin sonuna `SHA256SUMS` ve `Ufuk-FileAudit-1.2.0.tar.gz` ekleyerek dosyaları indirir. Depo ana sayfasının adresini `--source` olarak kullanmayın.
+`--source` bir indirme taban adresidir; tarayıcıda açılacak dosya listesi değildir. Bu adresi tek başına açınca GitHub 404 gösterebilir. Kurucu adresin sonuna `SHA256SUMS` ve `Ufuk-FileAudit-1.2.1.tar.gz` ekleyerek dosyaları indirir. Depo ana sayfasının adresini `--source` olarak kullanmayın.
 
 Dosyaları tarayıcıdan görmek için [Sürümler / Releases](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest) sayfasındaki **Assets** bölümünü açın. [Kurulum betiği](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) ve [SHA256 doğrulama dosyası](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) doğrudan indirilebilir.
 
@@ -79,7 +91,7 @@ Yukarıdaki kod bloğundaki iki komutu sırayla kopyalayın; komutlara `&#x20;`,
 ## Web sitenizden kurulum
 
 Yayın paketindeki dosyaları web sitenizin **herhangi bir klasörüne** açın. PHP, veritabanı veya özel Git sunucusu gerekmez.
-`install.sh`, `SHA256SUMS` ve `Ufuk-FileAudit-1.2.0.tar.gz` aynı web klasöründe bulunmalıdır.
+`install.sh`, `SHA256SUMS` ve `Ufuk-FileAudit-1.2.1.tar.gz` aynı web klasöründe bulunmalıdır.
 
 Yeni Ubuntu sunucusunda, adresi kendi yüklediğiniz klasörle değiştirin:
 
@@ -98,7 +110,7 @@ bash install.sh --source https://SITENIZ/KLASOR/ --download-only --target ./Ufuk
 ## Elle indirilen kaynakla kurulum
 
 ```bash
-tar -xzf Ufuk-FileAudit-1.2.0.tar.gz
+tar -xzf Ufuk-FileAudit-1.2.1.tar.gz
 cd Ufuk-FileAudit-1.1.0
 sudo bash install.sh
 ```
