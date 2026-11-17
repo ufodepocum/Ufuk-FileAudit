@@ -2,6 +2,8 @@
 
 ## 1.2.1 - 2026-11-17
 
+- Aynı sürüm düzeltmesi: gerçek işlem hesaplarından kullanıcı seçimi, tek gün/tarih-saat aralığı, tam dosya yolları, son işlem günü bağlantısı ve filtreyle uyumlu PDF/CSV.
+
 - `--name` ile kurulum sırasında arayüz ve PDF görünen adını özelleştirme; güncellemelerde adı koruma.
 
 

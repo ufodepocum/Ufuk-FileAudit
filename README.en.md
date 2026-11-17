@@ -4,6 +4,12 @@
 
 File auditing and reporting for Windows file servers. The web application runs on Ubuntu in Docker. The SMB auditing agent and disk inventory worker run on Windows as SYSTEM.
 
+## User activity history
+
+Open **Kullanıcı işlem geçmişi**, select a recorded account in **İşlemi yapan kullanıcı**, then choose a single day with **Bu günü göster** or enter start/end dates and times. Filter by access, deletion, creation or modification. Events are ordered newest first and show timestamp, actor, full file path, server/share and client IP. PDF/CSV use the same filters.
+
+Empty ranges offer a link to the account's last recorded activity day. Activity history is separate from file-owner disk inventory. Only captured and stored events can be shown; historical actions cannot be reconstructed from file ownership.
+
 ## Choose a different display name during installation (1.2.1+)
 
 ```bash

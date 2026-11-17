@@ -5,6 +5,12 @@
 Windows dosya sunucuları için Türkçe denetim, grafik ve PDF raporlama uygulaması.
 Web uygulaması Ubuntu'da Docker ile; SMB ajanı ve disk envanteri Windows'ta SYSTEM hesabıyla çalışır.
 
+## Kullanıcı işlem geçmişi
+
+**Kullanıcı işlem geçmişi** ekranında **İşlemi yapan kullanıcı** listesinden kayıtlı hesabı seçin. Tek gün seçip **Bu günü göster** düğmesine basın veya başlangıç/bitiş tarih ve saatlerini girin. İşlem türüyle erişim, silme, oluşturma ve değiştirme kayıtlarını filtreleyebilirsiniz.
+
+Sonuçlar en yeniden eskiye; tarih/saat, işlemi yapan hesap, tam dosya yolu, sunucu/paylaşım ve istemci IP ile listelenir. PDF/CSV aynı filtreleri kullanır. Aralık boşsa, kullanıcının saklanan son işlem gününe geçiş bağlantısı gösterilir. Bu ekran dosya sahipliği/alan envanterinden ayrıdır. Yalnızca yakalanıp kaydedilmiş hareketler gösterilebilir; eski sahiplik bilgisinden geçmiş işlemler türetilemez.
+
 ## Kurulumda farklı bir isim kullanma (1.2.1+)
 
 Kurucuyu indirin ve istediğiniz görünen adı `--name` ile yazın:
