@@ -7,6 +7,7 @@ class InitialAccount(models.Model):
     initial_hash=models.CharField(max_length=256)
 
 class InventorySnapshot(models.Model):
+    folder_detail_level=models.CharField(max_length=12,default='top')
     folder_details_complete=models.BooleanField(default=False)
     source=models.ForeignKey('monitor.APIToken',on_delete=models.SET_NULL,null=True,blank=True,related_name='snapshots')
     scan_id=models.UUIDField(unique=True)
@@ -44,3 +45,5 @@ class FolderUsage(models.Model):
     logical_bytes=models.PositiveBigIntegerField(default=0)
     allocated_bytes=models.PositiveBigIntegerField(default=0)
     allocation_errors=models.PositiveBigIntegerField(default=0)
+    class Meta:
+        indexes=[models.Index(fields=['snapshot','owner'])]

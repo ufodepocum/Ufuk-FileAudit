@@ -27,3 +27,16 @@ class OwnerDetailTests(TestCase):
         self.assertEqual(r.status_code,200);self.assertContains(r,'D:\\Veri\\a0');self.assertNotContains(r,'D:\\Veri\\b0');self.assertNotContains(r,'D:\\Veri\\a2')
         self.assertContains(r,'Windows bu SID')
         self.client.logout();self.assertEqual(self.client.get('/grafikler/sahip/',{'owner':'x'}).status_code,302)
+    def test_compressed_full_folder_inventory_paginates_and_exports_all_paths(self):
+        import json,gzip,base64,csv,io
+        server=APIToken.objects.create(client='folders',server_ip='192.0.2.10',whitelisted_ips='127.0.0.1',share_paths={'Veri':'D:\\Veri'})
+        folders=[{'owner':'DEMO\\owner','share':'Veri','path':f'D:\\Veri\\a\\nested-{n}','files':1,'logical_bytes':10,'allocated_bytes':4096} for n in range(105)]
+        body={'scan_id':str(uuid4()),'started_at':(self.now-timedelta(minutes=5)).isoformat(),'completed_at':(self.now-timedelta(minutes=1)).isoformat(),'owners':[{'owner':'DEMO\\owner','share':'Veri','files':105,'logical_bytes':1050,'allocated_bytes':105*4096}],'folder_details_complete':True,'folder_detail_level':'full','folders_gzip':base64.b64encode(gzip.compress(json.dumps(folders).encode())).decode()}
+        for _ in range(2):self.assertIn(self.client.post('/monitor/api/inventory/',data=json.dumps(body),content_type='application/json',HTTP_AUTHORIZATION='Token '+str(server.token)).status_code,(200,201))
+        self.assertEqual(FolderUsage.objects.count(),105)
+        params=self.params|{'owner':'DEMO\\owner','server':server.pk}
+        r=self.client.get('/grafikler/sahip/',params);self.assertEqual(r.context['folder_count'],105);self.assertEqual(len(r.context['folder_rows']),100);self.assertTrue(r.context['full_depth'])
+        r=self.client.get('/grafikler/sahip/',params|{'page':2});self.assertEqual(len(r.context['folder_rows']),5)
+        r=self.client.get('/grafikler/sahip/',params|{'export':'csv'});self.assertEqual(len(list(csv.reader(io.StringIO(r.content.decode('utf-8-sig'))))),106)
+        body['scan_id']=str(uuid4());body['folders_gzip']='invalid-compressed-data'
+        self.assertEqual(self.client.post('/monitor/api/inventory/',data=json.dumps(body),content_type='application/json',HTTP_AUTHORIZATION='Token '+str(server.token)).status_code,400)

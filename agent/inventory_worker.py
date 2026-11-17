@@ -1,5 +1,5 @@
 """Metadata-only local owner/allocated-space inventory; low priority; no ACL changes."""
-import os,time,json,uuid,ctypes,logging
+import os,time,json,uuid,ctypes,logging,gzip,base64
 from pathlib import Path
 from datetime import datetime,timezone
 from collections import defaultdict
@@ -77,10 +77,9 @@ def scan():
                                 space=physical(entry.path,getattr(st,'st_file_attributes',0));row['allocated_bytes']+=space
                             except OSError as exc:row['allocation_errors']+=1;errors+=1;allocation_failed=1;issue('allocation',entry.path,exc)
                             plain=entry.path[4:] if entry.path.startswith(chr(92)*2+'?'+chr(92)) else entry.path
-                            relative=os.path.relpath(plain,root).split(os.sep)
-                            folder=os.path.join(root,relative[0]) if len(relative)>1 else root
+                            folder=os.path.dirname(plain)
                             fkey=(share,owner,folder)
-                            if fkey in folders or len(folders)<10000:
+                            if fkey in folders or len(folders)<200000:
                                 item=folders.setdefault(fkey,{'share':share,'owner':owner,'path':folder,'files':0,'logical_bytes':0,'allocated_bytes':0,'allocation_errors':0})
                                 item['files']+=1;item['logical_bytes']+=st.st_size;item['allocated_bytes']+=space;item['allocation_errors']+=allocation_failed
                             else:folder_details_complete=False
@@ -90,7 +89,14 @@ def scan():
                         if time.monotonic()-checkpoint>=10:
                             write(PROGRESS,{'state':'running','started_at':started,'files':files,'errors':errors,'share':share});checkpoint=time.monotonic()
             except OSError as exc:errors+=1;issue('directory',directory,exc)
-    result={'scan_id':str(uuid.uuid4()),'started_at':started,'completed_at':now(),'owners':list(groups.values()),'folders':list(folders.values()),'folder_details_complete':folder_details_complete,'errors':errors,'skipped':skipped}
+    result={'scan_id':str(uuid.uuid4()),'started_at':started,'completed_at':now(),'owners':list(groups.values()),'folder_detail_level':'full','folder_details_complete':folder_details_complete,'errors':errors,'skipped':skipped}
+    folder_list=sorted(folders.values(),key=lambda r:r['allocated_bytes'],reverse=True)
+    while True:
+        raw=json.dumps(folder_list,ensure_ascii=False).encode('utf-8')
+        packed=base64.b64encode(gzip.compress(raw)).decode('ascii')
+        if len(raw)<=64*1024*1024 and len(packed)<3*1024*1024:break
+        folder_list=folder_list[:len(folder_list)//2];result['folder_details_complete']=False
+    result['folders_gzip']=packed
     write(ROOT/'inventory'/('outbox-'+result['scan_id']+'.json'),result)
     write(PROGRESS,{'state':'complete','started_at':started,'completed_at':result['completed_at'],'files':files,'errors':errors,'skipped':skipped})
     write(ROOT/'inventory/issues.json',{'completed_at':result['completed_at'],'errors':errors,'skipped':skipped,'samples':issues,'sample_limit':250})

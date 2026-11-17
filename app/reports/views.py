@@ -1,4 +1,4 @@
-import csv,json,uuid
+import csv,json,uuid,base64,gzip,io,binascii
 from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.decorators import login_required,user_passes_test
@@ -134,10 +134,21 @@ def owner_detail(request):
     if not form.is_valid():return render(request,'reports/owner_detail.html',{'filter_errors':form.errors},status=400)
     ctx=analytics_context(request,form,qs)
     owner=request.GET.get('owner','')
-    if not owner or len(owner)>256:return JsonResponse({'detail':'Geçersiz dosya sahibi'},status=400)
-    rows=FolderUsage.objects.filter(snapshot__in=ctx['snapshots'],owner=owner).select_related('snapshot__source').order_by('-allocated_bytes','share','path')
+    if len(owner)>256:return JsonResponse({'detail':'Geçersiz dosya sahibi'},status=400)
+    rows=FolderUsage.objects.filter(snapshot__in=ctx['snapshots']).select_related('snapshot__source').order_by('-allocated_bytes','share','path')
     if form.cleaned_data.get('share_name'):rows=rows.filter(share__iexact=form.cleaned_data['share_name'])
-    ctx.update(owner=owner,unresolved_sid=owner.startswith('S-1-'),folder_rows=rows,details_complete=bool(ctx['snapshots']) and all(s.folder_details_complete for s in ctx['snapshots']))
+    if owner:rows=rows.filter(owner=owner)
+    term=request.GET.get('folder','')[:500]
+    if term:rows=rows.filter(path__icontains=term)
+    if request.GET.get('export')=='csv':
+        response=HttpResponse(content_type='text/csv; charset=utf-8');response['Content-Disposition']='attachment; filename="Ufuk-FileAudit-Klasorler.csv"';response.write('\ufeff')
+        writer=csv.writer(response);writer.writerow(['Dosya sahibi','Sunucu','Paylaşım','Klasör','Dosya sayısı','Ayrılan bayt','Dosya boyutları bayt','Ölçüm tarihi'])
+        def safe(v):
+            v=str(v);return "'"+v if v.lstrip().startswith(('=','+','-','@')) else v
+        for row in rows.iterator(chunk_size=1000):writer.writerow([safe(v) for v in [row.owner,row.snapshot.source.client if row.snapshot.source else row.snapshot.host,row.share,row.path,row.files,row.allocated_bytes,row.logical_bytes,row.snapshot.completed_at]])
+        return response
+    params=request.GET.copy();params.pop('page',None);params.pop('export',None)
+    ctx.update(owner=owner,unresolved_sid=owner.startswith('S-1-'),folder_rows=Paginator(rows,100).get_page(request.GET.get('page')),folder_count=rows.count(),folder_search=term,detail_query=params.urlencode(),full_depth=bool(ctx['snapshots']) and all(s.folder_detail_level=='full' for s in ctx['snapshots']),details_complete=bool(ctx['snapshots']) and all(s.folder_details_complete for s in ctx['snapshots']))
     return render(request,'reports/owner_detail.html',ctx)
 
 @require_POST
@@ -171,7 +182,14 @@ def inventory_ingest(request):
             clean.append(OwnerUsage(owner=str(row['owner'])[:256],share=row['share'],**numeric))
         errors=int(data.get('errors',0));skipped=int(data.get('skipped',0))
         folder_data=data.get('folders',[])
-        if not isinstance(folder_data,list) or len(folder_data)>10000:raise ValueError('Geçersiz klasör listesi')
+        if 'folders_gzip' in data:
+            packed=base64.b64decode(data['folders_gzip'],validate=True)
+            with gzip.GzipFile(fileobj=io.BytesIO(packed)) as stream:raw=stream.read(64*1024*1024+1)
+            if len(raw)>64*1024*1024:raise ValueError('Klasör verisi çok büyük')
+            folder_data=json.loads(raw)
+        if not isinstance(folder_data,list) or len(folder_data)>200000:raise ValueError('Geçersiz klasör listesi')
+        detail_level=data.get('folder_detail_level','top')
+        if detail_level not in ('top','full'):raise ValueError('Geçersiz ayrıntı düzeyi')
         folder_rows=[];allowed=request.audit_client.share_paths or dict.fromkeys(settings.AUDIT_SHARES)
         for row in folder_data:
             if row['share'].casefold() not in {str(x).casefold() for x in allowed}:raise ValueError('Geçersiz paylaşım')
@@ -182,7 +200,7 @@ def inventory_ingest(request):
             folder_rows.append(FolderUsage(owner=str(row['owner'])[:256],share=row['share'],path=path,**numeric))
         if errors<0 or skipped<0:raise ValueError('Geçersiz sayaç')
         with transaction.atomic():
-            snap,created=InventorySnapshot.objects.get_or_create(scan_id=sid,defaults={'folder_details_complete':data.get('folder_details_complete') is True,'source':request.audit_client,'started_at':start,'completed_at':end,'host':request.META['REMOTE_ADDR'],'errors':errors,'skipped':skipped,'files':sum(r.files for r in clean)})
+            snap,created=InventorySnapshot.objects.get_or_create(scan_id=sid,defaults={'folder_detail_level':detail_level,'folder_details_complete':data.get('folder_details_complete') is True,'source':request.audit_client,'started_at':start,'completed_at':end,'host':request.META['REMOTE_ADDR'],'errors':errors,'skipped':skipped,'files':sum(r.files for r in clean)})
             if snap.source_id!=request.audit_client.pk:raise ValueError('Ölçüm başka sunucuya ait')
             if created:
                 for r in clean:r.snapshot=snap
@@ -190,7 +208,7 @@ def inventory_ingest(request):
                 for r in folder_rows:r.snapshot=snap
                 FolderUsage.objects.bulk_create(folder_rows,batch_size=200)
         return JsonResponse({'ok':True,'created':created},status=201 if created else 200)
-    except (KeyError,ValueError,TypeError,OverflowError,json.JSONDecodeError) as exc:return JsonResponse({'detail':'Geçersiz envanter verisi'},status=400)
+    except (KeyError,ValueError,TypeError,OverflowError,json.JSONDecodeError,binascii.Error,OSError,EOFError) as exc:return JsonResponse({'detail':'Geçersiz envanter verisi'},status=400)
 
 @csrf_exempt
 def scan_poll(request):
