@@ -4,6 +4,15 @@
 
 File auditing and reporting for Windows file servers. The web application runs on Ubuntu in Docker. The SMB auditing agent and disk inventory worker run on Windows as SYSTEM.
 
+## 1.2.0: full folder details and live reports
+
+- Open **Tüm kullanıcıların klasörleri** under disk usage to list full nested directory paths for every file owner, with file counts, allocated bytes and logical sizes. Owner links filter the list to one owner.
+- Each row counts files directly inside that directory; parent rows do not duplicate descendant totals. Includes path search, 100-row pagination and CSV export of every matching row.
+- A new full-folder scan is required. Historical top-level summaries are labeled accordingly. Inaccessible directories can still make measurements partial. Unresolved account SIDs remain visible without guessing account names.
+- **Canlı takip · 30 sn** refreshes every 30 seconds and advances the end time; manual date selection keeps historical reports fixed.
+- Empty confirmed-copy periods fall back to retained records across all servers, with the scope explicitly labeled. Retention remains at most one year.
+- Supports Windows extended-length paths and records inventory error samples in the agent's `inventory/issues.json`.
+
 ## Screenshots
 
 Captured from the actual application interface using entirely fictional demo data. Users, files, IP addresses and measurements are examples. The application interface is in Turkish.
@@ -61,7 +70,7 @@ sudo bash install.sh --source https://github.com/ufodepocum/Ufuk-FileAudit/relea
 
 This repository and its release assets are public, so installation does not require a GitHub account.
 
-`--source` is a download base URL, not a browsable directory. Opening that URL alone may return GitHub's 404 page. The installer appends `SHA256SUMS` and `Ufuk-FileAudit-1.1.1.tar.gz` to download the files. Do not use the repository homepage as `--source`.
+`--source` is a download base URL, not a browsable directory. Opening that URL alone may return GitHub's 404 page. The installer appends `SHA256SUMS` and `Ufuk-FileAudit-1.2.0.tar.gz` to download the files. Do not use the repository homepage as `--source`.
 
 To browse downloads, open **Assets** on the [latest release page](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest). The [installer script](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/install.sh) and [checksum file](https://github.com/ufodepocum/Ufuk-FileAudit/releases/latest/download/SHA256SUMS) are direct downloads.
 
@@ -75,7 +84,7 @@ Keep these files together:
 
 - `install.sh`
 - `SHA256SUMS`
-- `Ufuk-FileAudit-1.1.1.tar.gz`
+- `Ufuk-FileAudit-1.2.0.tar.gz`
 
 The package also includes a source-code browser, download page, ZIP archive and a static HTTP Git repository. PHP and a website database are not required.
 
@@ -97,7 +106,7 @@ bash install.sh --source https://YOUR-SITE/YOUR-FOLDER/ --download-only --target
 ## Install an extracted archive
 
 ```bash
-tar -xzf Ufuk-FileAudit-1.1.1.tar.gz
+tar -xzf Ufuk-FileAudit-1.2.0.tar.gz
 cd Ufuk-FileAudit-1.1.0
 sudo bash install.sh
 ```
@@ -200,4 +209,4 @@ Installer tests, web integration tests, a clean-database first-login/password-ch
 
 ## License
 
- The GPL-3.0 license and upstream attribution are included in `LICENSE` and `NOTICE`. Windows installers for Python, Wireshark and Npcap are downloaded from official sources on the target machine and are not bundled here.
+ The GPL-3.0 license is included in `LICENSE`. Windows installers for Python, Wireshark and Npcap are downloaded from official sources on the target machine and are not bundled here.

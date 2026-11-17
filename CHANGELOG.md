@@ -1,5 +1,13 @@
 # Değişiklikler
 
+## 1.2.0 - 2026-11-17
+
+- Tüm sahiplerin tam alt klasör yolları, arama, sayfalama ve eksiksiz CSV çıktısı.
+- Sıkıştırılmış klasör ölçüm aktarımı ve geçmiş özet ölçümlerle uyumluluk.
+- Canlı raporlama, boş kopyalama aralıklarında açıkça etiketlenmiş sistem geneli sıralama.
+- Uzun Windows yolları ve ayrıntılı ölçüm hata kayıtları.
+
+
 ## 1.1.1 - 2026-11-05
 
 - Paylaşım ekleme/güncellemede ajanın başlamasını engelleyen eksik `pdml_parser.py` dağıtıma eklendi.

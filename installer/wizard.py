@@ -4,7 +4,7 @@ import argparse,getpass,ipaddress,json,os,secrets,shutil,socket,subprocess,sys,t
 from pathlib import Path
 from urllib.request import urlopen
 
-VERSION='1.1.1'
+VERSION='1.2.0'
 WINDOWS_ROOT=r'C:\ProgramData\Ufuk-FileAudit'
 class SetupError(RuntimeError):pass
 
