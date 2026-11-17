@@ -37,13 +37,26 @@ Captured from the actual application interface using entirely fictional demo dat
 
 ![User activity charts and report filters](docs/images/grafikler.png)
 
-### Audit log
+### User activity history
 
 ![Audit events with date, user and file filters](docs/images/islem-kayitlari.png)
 
 ### Disk usage by file owner
 
 ![File counts and disk space in GB by owner](docs/images/disk-kullanimi.png)
+
+### Full folder paths for all owners
+
+![Fictional users and full directory paths](docs/images/tum-klasorler.png)
+
+### Folder breakdown for one owner
+
+![Fictional owner folder and disk usage details](docs/images/kullanici-klasorleri.png)
+
+### Login page
+
+![Example login page](docs/images/giris.png)
+
 
 ## Manage servers and shares in the panel (1.1.0)
 

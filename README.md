@@ -40,13 +40,26 @@ Görseller gerçek uygulama arayüzünden, tamamen kurgusal demo verileriyle haz
 
 ![Kullanıcı işlem grafikleri ve rapor filtreleri](docs/images/grafikler.png)
 
-### İşlem kayıtları
+### Kullanıcı işlem geçmişi
 
 ![Tarih, kullanıcı ve dosya bazında işlem kayıtları](docs/images/islem-kayitlari.png)
 
 ### Dosya sahibine göre disk kullanımı
 
 ![Kullanıcıların dosya sayısı ve GB cinsinden disk kullanımı](docs/images/disk-kullanimi.png)
+
+### Tüm kullanıcıların tam klasör yolları
+
+![Örnek tüm kullanıcılar ve tam klasör yolları](docs/images/tum-klasorler.png)
+
+### Bir kullanıcının klasör dağılımı
+
+![Örnek kullanıcı için tam klasör ve alan ayrıntıları](docs/images/kullanici-klasorleri.png)
+
+### Giriş ekranı
+
+![Örnek giriş ekranı](docs/images/giris.png)
+
 
 ## Panelden sunucu ve paylaşım yönetimi (1.1.0)
 

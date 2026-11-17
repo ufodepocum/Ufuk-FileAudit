@@ -50,6 +50,9 @@ def base_context(request,form):
                 if timezone.is_naive(parsed):parsed=timezone.make_aware(parsed)
                 display_values[key]=timezone.localtime(parsed).strftime('%d.%m.%Y %H:%M')
         except (ValueError,TypeError):pass
+    for key in ['start_date','end_date']:
+        parsed=form.cleaned_data.get(key+'_parsed')
+        if parsed:display_values[key]=timezone.localtime(parsed).strftime('%d.%m.%Y %H:%M')
     display=Filters(display_values,activity=request.path=='/logs/')
     return {'filter_form':display,'query':values.urlencode(),'min_date':timezone.localtime(cutoff()).strftime('%Y-%m-%dT%H:%M'),'max_date':now.strftime('%Y-%m-%dT%H:%M'),'range_start':form.cleaned_data.get('start_date_parsed'),'range_end':form.cleaned_data.get('end_date_parsed'),'filter_errors':form.errors,'section':'logs','product_name':settings.APP_DISPLAY_NAME}
 

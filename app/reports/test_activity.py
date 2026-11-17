@@ -14,6 +14,7 @@ class ActivityHistoryTests(TestCase):
         day=self.now.strftime('%Y-%m-%d');params={'actor':'DEMO\\anna','start_date':day,'end_date':day}
         r=self.client.get('/logs/',params)
         self.assertEqual(r.status_code,200);self.assertEqual(r.context['total'],2)
+        self.assertTrue(r.context['filter_form']['end_date'].value().endswith('23:59'))
         self.assertEqual([e.action for e in r.context['page_obj']],['Accessed','Removed'])
         self.assertContains(r,'\\\\fs-demo\\Veri\\Subfolder\\report.txt')
         self.assertContains(r,'İşlemi yapan kullanıcı');self.assertEqual(len(r.context['filter_form'].fields['actor'].choices),3)
