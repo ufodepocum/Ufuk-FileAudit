@@ -30,24 +30,26 @@ def physical(path,attributes):
     path=extended(path)
     if not attributes&(0x800|0x200):
         handle=kernel.CreateFileW(path,0x80,7,None,3,0x00200000,None)
-        if handle==ctypes.c_void_p(-1).value:raise OSError(ctypes.get_last_error())
+        if handle==ctypes.c_void_p(-1).value:raise ctypes.WinError(ctypes.get_last_error())
         try:
             info=FileStandardInfo()
-            if not kernel.GetFileInformationByHandleEx(handle,1,ctypes.byref(info),ctypes.sizeof(info)):raise OSError(ctypes.get_last_error())
+            if not kernel.GetFileInformationByHandleEx(handle,1,ctypes.byref(info),ctypes.sizeof(info)):raise ctypes.WinError(ctypes.get_last_error())
             return info.allocation
         finally:kernel.CloseHandle(handle)
     high=ctypes.c_ulong();ctypes.set_last_error(0);low=allocated(path,ctypes.byref(high))
-    if low==0xffffffff and ctypes.get_last_error():raise OSError(ctypes.get_last_error())
+    if low==0xffffffff and ctypes.get_last_error():raise ctypes.WinError(ctypes.get_last_error())
     return (high.value<<32)|low
 def scan():
-    started=now();groups={};cache={};errors=skipped=files=0;links=set();checkpoint=time.monotonic()
+    started=now();folders={};folder_details_complete=True;groups={};cache={};errors=skipped=files=0;links=set();checkpoint=time.monotonic();issues=[]
+    def issue(kind,path,exc=None):
+        if len(issues)<250:issues.append({'kind':kind,'path':str(path),'error':str(exc)[:300] if exc else '', 'code':getattr(exc,'winerror',None) or getattr(exc,'errno',None)})
     write(PROGRESS,{'state':'running','started_at':started,'files':0,'errors':0})
     for share,root in CONFIG['share_paths'].items():
         dirs=[root]
         while dirs:
             directory=dirs.pop()
             try:
-                with os.scandir(directory) as iterator:
+                with os.scandir(extended(directory)) as iterator:
                     for entry in iterator:
                         try:
                             st=entry.stat(follow_symlinks=False)
@@ -66,21 +68,32 @@ def scan():
                                         name,domain,_=win32security.LookupAccountSid(None,sid);cache[key]=(domain+'\\' if domain else '')+name
                                     except Exception:cache[key]=key
                                 owner=cache[key]
-                            except Exception:owner='Sahip okunamadı';errors+=1
+                            except Exception as exc:owner='Sahip okunamadı';errors+=1;issue('owner',entry.path,exc)
                             key=(share,owner)
                             row=groups.setdefault(key,{'share':share,'owner':owner,'files':0,'logical_bytes':0,'allocated_bytes':0,'allocation_errors':0})
                             row['files']+=1;row['logical_bytes']+=st.st_size
-                            try:row['allocated_bytes']+=physical(entry.path,getattr(st,'st_file_attributes',0))
-                            except OSError:row['allocation_errors']+=1;errors+=1
+                            space=0;allocation_failed=0
+                            try:
+                                space=physical(entry.path,getattr(st,'st_file_attributes',0));row['allocated_bytes']+=space
+                            except OSError as exc:row['allocation_errors']+=1;errors+=1;allocation_failed=1;issue('allocation',entry.path,exc)
+                            plain=entry.path[4:] if entry.path.startswith(chr(92)*2+'?'+chr(92)) else entry.path
+                            relative=os.path.relpath(plain,root).split(os.sep)
+                            folder=os.path.join(root,relative[0]) if len(relative)>1 else root
+                            fkey=(share,owner,folder)
+                            if fkey in folders or len(folders)<10000:
+                                item=folders.setdefault(fkey,{'share':share,'owner':owner,'path':folder,'files':0,'logical_bytes':0,'allocated_bytes':0,'allocation_errors':0})
+                                item['files']+=1;item['logical_bytes']+=st.st_size;item['allocated_bytes']+=space;item['allocation_errors']+=allocation_failed
+                            else:folder_details_complete=False
                             files+=1
                             if files%500==0:time.sleep(.03)
-                        except (OSError,ValueError):errors+=1
+                        except (OSError,ValueError) as exc:errors+=1;issue('entry',entry.path,exc)
                         if time.monotonic()-checkpoint>=10:
                             write(PROGRESS,{'state':'running','started_at':started,'files':files,'errors':errors,'share':share});checkpoint=time.monotonic()
-            except OSError:errors+=1
-    result={'scan_id':str(uuid.uuid4()),'started_at':started,'completed_at':now(),'owners':list(groups.values()),'errors':errors,'skipped':skipped}
+            except OSError as exc:errors+=1;issue('directory',directory,exc)
+    result={'scan_id':str(uuid.uuid4()),'started_at':started,'completed_at':now(),'owners':list(groups.values()),'folders':list(folders.values()),'folder_details_complete':folder_details_complete,'errors':errors,'skipped':skipped}
     write(ROOT/'inventory'/('outbox-'+result['scan_id']+'.json'),result)
     write(PROGRESS,{'state':'complete','started_at':started,'completed_at':result['completed_at'],'files':files,'errors':errors,'skipped':skipped})
+    write(ROOT/'inventory/issues.json',{'completed_at':result['completed_at'],'errors':errors,'skipped':skipped,'samples':issues,'sample_limit':250})
     LOG.info('Scan completed: files=%s errors=%s skipped=%s',files,errors,skipped)
     return result
 def upload():

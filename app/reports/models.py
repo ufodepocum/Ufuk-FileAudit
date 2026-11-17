@@ -7,6 +7,7 @@ class InitialAccount(models.Model):
     initial_hash=models.CharField(max_length=256)
 
 class InventorySnapshot(models.Model):
+    folder_details_complete=models.BooleanField(default=False)
     source=models.ForeignKey('monitor.APIToken',on_delete=models.SET_NULL,null=True,blank=True,related_name='snapshots')
     scan_id=models.UUIDField(unique=True)
     started_at=models.DateTimeField(db_index=True)
@@ -33,3 +34,13 @@ class ScanRequest(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     requested_by=models.CharField(max_length=200)
     acknowledged_at=models.DateTimeField(null=True,blank=True)
+
+class FolderUsage(models.Model):
+    snapshot=models.ForeignKey(InventorySnapshot,on_delete=models.CASCADE,related_name='folder_usage')
+    owner=models.CharField(max_length=256)
+    share=models.CharField(max_length=100)
+    path=models.TextField()
+    files=models.PositiveBigIntegerField(default=0)
+    logical_bytes=models.PositiveBigIntegerField(default=0)
+    allocated_bytes=models.PositiveBigIntegerField(default=0)
+    allocation_errors=models.PositiveBigIntegerField(default=0)

@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from .models import InventorySnapshot,OwnerUsage,ScanRequest
+from .models import InventorySnapshot,OwnerUsage,ScanRequest,FolderUsage
 from .forms import Filters,ACTIONS
 from .retention import cutoff,purge
 from monitor.models import LogEntry,APIToken
@@ -78,6 +78,11 @@ def analytics_context(request,form,qs):
     ctx=base_context(request,form);ctx['section']='graphs'
     totals=dict(qs.values('action').annotate(n=Count('id')).values_list('action','n'))
     ctx.update(total=sum(totals.values()),deletes=totals.get('Removed',0),copies=totals.get('Copied',0),creates=totals.get('Created',0),top_deletes=rankings(qs,'Removed'),top_copies=rankings(qs,'Copied'),top_creates=rankings(qs,'Created'))
+    ctx['copy_scope']='Seçili tarih ve filtreler · doğrulanmış kopyalama'
+    if form.is_valid() and not ctx['top_copies']:
+        ctx['top_copies']=rankings(LogEntry.objects.filter(when__gte=cutoff()),'Copied')
+        ctx['copies_fallback']=True
+        ctx['copy_scope']='Seçili aralıkta kopyalama yok: tüm sunucular, saklanan tüm dönem (en fazla 1 yıl)'
     timeline=list(qs.annotate(day=TruncDate('when',tzinfo=timezone.get_current_timezone())).values('day').annotate(total=Count('id')).order_by('day'))
     highest=max([r['total'] for r in timeline],default=1)
     for row in timeline:row['width']=max(1,round(row['total']/highest*100,2))
@@ -123,6 +128,18 @@ def graphs(request):
 @login_required
 def home(request):return redirect('reports:graphs')
 
+@login_required
+def owner_detail(request):
+    form,qs=filtered(request)
+    if not form.is_valid():return render(request,'reports/owner_detail.html',{'filter_errors':form.errors},status=400)
+    ctx=analytics_context(request,form,qs)
+    owner=request.GET.get('owner','')
+    if not owner or len(owner)>256:return JsonResponse({'detail':'Geçersiz dosya sahibi'},status=400)
+    rows=FolderUsage.objects.filter(snapshot__in=ctx['snapshots'],owner=owner).select_related('snapshot__source').order_by('-allocated_bytes','share','path')
+    if form.cleaned_data.get('share_name'):rows=rows.filter(share__iexact=form.cleaned_data['share_name'])
+    ctx.update(owner=owner,unresolved_sid=owner.startswith('S-1-'),folder_rows=rows,details_complete=bool(ctx['snapshots']) and all(s.folder_details_complete for s in ctx['snapshots']))
+    return render(request,'reports/owner_detail.html',ctx)
+
 @require_POST
 @user_passes_test(lambda u:u.is_active and u.is_staff)
 def request_scan(request):
@@ -153,13 +170,25 @@ def inventory_ingest(request):
             if any(v<0 or v>9223372036854775807 for v in numeric.values()):raise ValueError('Geçersiz boyut')
             clean.append(OwnerUsage(owner=str(row['owner'])[:256],share=row['share'],**numeric))
         errors=int(data.get('errors',0));skipped=int(data.get('skipped',0))
+        folder_data=data.get('folders',[])
+        if not isinstance(folder_data,list) or len(folder_data)>10000:raise ValueError('Geçersiz klasör listesi')
+        folder_rows=[];allowed=request.audit_client.share_paths or dict.fromkeys(settings.AUDIT_SHARES)
+        for row in folder_data:
+            if row['share'].casefold() not in {str(x).casefold() for x in allowed}:raise ValueError('Geçersiz paylaşım')
+            numeric={k:int(row.get(k,0)) for k in ['files','logical_bytes','allocated_bytes','allocation_errors']}
+            if any(v<0 or v>9223372036854775807 for v in numeric.values()):raise ValueError('Geçersiz boyut')
+            path=str(row['path'])
+            if not path or len(path)>32767:raise ValueError('Geçersiz yol')
+            folder_rows.append(FolderUsage(owner=str(row['owner'])[:256],share=row['share'],path=path,**numeric))
         if errors<0 or skipped<0:raise ValueError('Geçersiz sayaç')
         with transaction.atomic():
-            snap,created=InventorySnapshot.objects.get_or_create(scan_id=sid,defaults={'source':request.audit_client,'started_at':start,'completed_at':end,'host':request.META['REMOTE_ADDR'],'errors':errors,'skipped':skipped,'files':sum(r.files for r in clean)})
+            snap,created=InventorySnapshot.objects.get_or_create(scan_id=sid,defaults={'folder_details_complete':data.get('folder_details_complete') is True,'source':request.audit_client,'started_at':start,'completed_at':end,'host':request.META['REMOTE_ADDR'],'errors':errors,'skipped':skipped,'files':sum(r.files for r in clean)})
             if snap.source_id!=request.audit_client.pk:raise ValueError('Ölçüm başka sunucuya ait')
             if created:
                 for r in clean:r.snapshot=snap
                 OwnerUsage.objects.bulk_create(clean,batch_size=500)
+                for r in folder_rows:r.snapshot=snap
+                FolderUsage.objects.bulk_create(folder_rows,batch_size=200)
         return JsonResponse({'ok':True,'created':created},status=201 if created else 200)
     except (KeyError,ValueError,TypeError,OverflowError,json.JSONDecodeError) as exc:return JsonResponse({'detail':'Geçersiz envanter verisi'},status=400)
 

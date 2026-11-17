@@ -127,6 +127,7 @@ def analytics_pdf(ctx,user):
     filters=[label+': '+str(data[key]) for key,label in [('who','Kullanıcı'),('share_name','Paylaşım'),('action','İşlem'),('search','Arama'),('host','İstemci IP')] if data.get(key)]
     if filters:report.paragraph('Filtreler: '+' · '.join(filters))
     report.bars('En çok dosya silen kullanıcılar',ctx['top_deletes'])
+    report.paragraph(ctx.get('copy_scope','Seçili dönem'))
     report.bars('En çok dosya kopyalayan kullanıcılar',ctx['top_copies'])
     report.paragraph('Kopyalama sayısı yalnızca sunucunun doğruladığı SMB kopyalama işlemleridir. İstemcinin okuyup yeniden yazarak yaptığı kopyalar, oluşturma/yazma kayıtlarında görünür.')
     report.bars('En çok yeni dosya oluşturan kullanıcılar',ctx['top_creates'])
